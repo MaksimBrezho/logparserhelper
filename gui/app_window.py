@@ -18,6 +18,8 @@ class AppWindow(tk.Frame):
         self.check_vars = defaultdict(list)
         self.tooltip = None
 
+        self.matched_patterns = set()
+
         self.create_widgets()
 
     def create_widgets(self):
@@ -85,6 +87,7 @@ class AppWindow(tk.Frame):
 
             for pat in self.patterns.get("date_patterns", []):
                 pat["enabled"] = True
+                pat["_matched"] = False
 
             self.current_page = 0
             self.update_log_view()
@@ -97,20 +100,28 @@ class AppWindow(tk.Frame):
             widget.destroy()
 
         self.check_vars.clear()
-
         categories = defaultdict(list)
+
         for i, pat in enumerate(self.patterns.get("date_patterns", [])):
-            if pat.get("_matched", False) or i in self.check_vars:
-                category = pat.get("category", "Дата")
-                categories[category].append((i, pat))
+            # Отображаем только те, что хотя бы раз сработали
+            if not pat.get("_matched", False):
+                continue
+            category = pat.get("category", "Дата")
+            categories[category].append((i, pat))
 
         for group, items in categories.items():
             label = tk.Label(self.control_frame, text=group, font=("Arial", 10, "bold"))
             label.pack(anchor="w", padx=10, pady=(10, 0))
             for i, pat in items:
                 var = self.check_vars.get(i, tk.BooleanVar(value=pat.get("enabled", True)))
-                chk = tk.Checkbutton(self.control_frame, text=pat["name"], variable=var,
-                                     command=self.apply_highlighting, anchor="w", justify="left")
+                chk = tk.Checkbutton(
+                    self.control_frame,
+                    text=pat["name"],
+                    variable=var,
+                    command=self.apply_highlighting,
+                    anchor="w",
+                    justify="left"
+                )
                 chk.pack(fill="x", padx=20, pady=2)
                 self.check_vars[i] = var
 
@@ -127,16 +138,17 @@ class AppWindow(tk.Frame):
         self.update_nav_buttons()
 
     def apply_highlighting(self):
+        # Обновляем включённость шаблонов из чекбоксов
         for i, pat in enumerate(self.patterns.get("date_patterns", [])):
             if i in self.check_vars:
                 pat["enabled"] = self.check_vars[i].get()
-            else:
-                pat["enabled"] = True
 
+        # Подсветка
         matched_indexes = highlight_dates_in_text(self.text_area, self.patterns)
 
+        # Обновляем флаг "_matched": сохраняем True, если хотя бы раз сработал
         for i, pat in enumerate(self.patterns.get("date_patterns", [])):
-            pat["_matched"] = i in matched_indexes
+            pat["_matched"] = pat.get("_matched", False) or (i in matched_indexes)
 
         self.build_highlight_controls()
 
@@ -178,6 +190,7 @@ class AppWindow(tk.Frame):
             self.patterns = load_patterns()
             for pat in self.patterns.get("date_patterns", []):
                 pat["enabled"] = True
+                pat["_matched"] = False
             self.update_log_view()
 
         RegexEditor(self.master, on_close_callback=on_close)
