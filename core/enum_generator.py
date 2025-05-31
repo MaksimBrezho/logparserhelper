@@ -1,45 +1,32 @@
-import re
-from typing import List
+# Повторная реализация после сброса состояния среды
 
-class TrieNode:
-    def __init__(self):
-        self.children = {}
-        self.is_end = False
+from typing import List, Optional
+import re
 
 class EnumRegexGenerator:
-    def __init__(self, words: List[str]):
-        self.root = TrieNode()
-        for word in words:
-            self._insert(word)
-
-    def _insert(self, word: str):
-        node = self.root
-        for char in word:
-            node = node.children.setdefault(char, TrieNode())
-        node.is_end = True
-
-    def _build_regex(self, node: TrieNode) -> str:
-        if not node.children:
-            return ''
-        parts = []
-        for char, child in sorted(node.children.items()):
-            subpattern = re.escape(char) + self._build_regex(child)
-            if child.is_end:
-                parts.append(subpattern + '?')
-            else:
-                parts.append(subpattern)
-        if node.is_end:
-            parts.append('')
-        if len(parts) == 1:
-            return parts[0]
-        return '(?:' + '|'.join(parts) + ')'
+    def __init__(self, words: List[str], group_name: Optional[str] = None,
+                 optional: bool = False, ignore_case: bool = False, sort_by_length: bool = False):
+        self.words = sorted(set(words), key=lambda w: -len(w) if sort_by_length else w)
+        self.group_name = group_name
+        self.optional = optional
+        self.ignore_case = ignore_case
 
     def generate(self) -> str:
-        return self._build_regex(self.root)
+        base = '|'.join(map(re.escape, self.words))
+        base = f"(?:{base})"
 
-if __name__ == "__main__":
-    words = ['INFO', 'WARN', 'ERROR']
-    generator = EnumRegexGenerator(words)
-    regex = generator.generate()
-    print("Сгенерированное регулярное выражение:")
-    print(regex)
+        if self.ignore_case:
+            base = f"(?i:{base})"
+        if self.group_name:
+            base = f"(?P<{self.group_name}>{base})"
+        if self.optional:
+            base = f"(?:{base})?"
+
+        return base
+
+
+# Пример использования
+words = ['INFO', 'WARN', 'ERROR']
+generator = EnumRegexGenerator(words, group_name='level', ignore_case=True, optional=False, sort_by_length=True)
+regex = generator.generate()
+regex

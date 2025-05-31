@@ -4,9 +4,10 @@ from .generalizer import generalize_token
 from .enum_generator import EnumRegexGenerator
 import re
 
-def build_regex_from_examples(lines: List[str]) -> str:
+def build_regex_from_examples(lines: List[str], ignore_case=False) -> str:
     token_columns = []
     sep_columns = []
+    case_insensitive = ignore_case  # по умолчанию — False, включим при необходимости
 
     for line in lines:
         pairs = tokenize(line.strip())
@@ -25,8 +26,10 @@ def build_regex_from_examples(lines: List[str]) -> str:
 
     token_patterns = []
     for column in token_columns:
-        if all(re.fullmatch(r'[A-Z]+', t) for t in column):
-            pattern = EnumRegexGenerator(column).generate()
+        unique_values = list(set(column))
+        if all(re.fullmatch(r'[A-Z]+', t) for t in unique_values) and len(unique_values) > 1:
+            pattern = EnumRegexGenerator(unique_values).generate()
+            case_insensitive = True  # поскольку используем слова в верхнем регистре
         else:
             pattern = generalize_token(column[0])
         token_patterns.append(pattern)
@@ -40,4 +43,7 @@ def build_regex_from_examples(lines: List[str]) -> str:
         if i < len(sep_patterns):
             result.append(sep_patterns[i])
 
-    return ''.join(result)
+    final_pattern = ''.join(result)
+    if case_insensitive:
+        final_pattern = f"(?i){final_pattern}"
+    return final_pattern
