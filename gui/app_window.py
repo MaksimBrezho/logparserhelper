@@ -81,6 +81,7 @@ class AppWindow(tk.Frame):
         self.coverage_label.pack(side="left", padx=15)
         tk.Button(ctrl, text="Создать паттерн", command=self.open_pattern_wizard).pack(side="left", padx=5)
         tk.Button(ctrl, text="Сохранить паттерны", command=self.save_current_patterns).pack(side="left", padx=5)
+        tk.Button(ctrl, text="Генератор CEF", command=self.open_code_generator).pack(side="left", padx=5)
         self.text_area.bind("<Motion>", self.on_hover)
         self.text_area.bind("<Leave>", lambda e: self.tooltip.hidetip())
 
@@ -312,3 +313,14 @@ class AppWindow(tk.Frame):
             save_per_log_pattern(self.source_path, pat["name"], pat, log_name=log_name)
 
         messagebox.showinfo("Готово", "Паттерны сохранены.")
+
+    def open_code_generator(self):
+        current_key = get_log_name_for_file(getattr(self, "source_path", ""))
+        try:
+            from gui.code_generator_dialog import CodeGeneratorDialog
+            dlg = CodeGeneratorDialog(self, default_key=current_key)
+            dlg.grab_set()
+            self.wait_window(dlg)
+        except Exception as e:
+            print(f"[CodeGenerator Error] {e}")
+            messagebox.showerror("Ошибка", f"Не удалось открыть генератор: {e}")

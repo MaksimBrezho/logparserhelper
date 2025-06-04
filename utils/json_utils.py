@@ -128,3 +128,23 @@ def load_cef_fields():
 def load_cef_field_keys():
     """Возвращает список ключей CEF-полей."""
     return [fld.get("key") for fld in load_cef_fields() if "key" in fld]
+
+
+def _read_per_log_data():
+    """Return raw content of PER_LOG_PATTERNS_PATH."""
+    try:
+        with open(PER_LOG_PATTERNS_PATH, "r", encoding="utf-8") as f:
+            return json.load(f)
+    except (FileNotFoundError, json.JSONDecodeError):
+        return {}
+
+
+def load_per_log_keys() -> list:
+    """Возвращает список ключей из per_log_patterns.json."""
+    return list(_read_per_log_data().keys())
+
+
+def load_per_log_patterns_for(log_key: str) -> dict:
+    """Возвращает паттерны для указанного ключа лог-файла."""
+    data = _read_per_log_data().get(log_key, {})
+    return data.get("patterns", {})
