@@ -1,17 +1,23 @@
 import re
 import tkinter as tk
 from typing import List, Dict
-from utils.color_utils import get_shaded_color
+from utils.color_utils import get_shaded_color, adjust_lightness
 
 
 def compute_optimal_matches(line: str, patterns: List[Dict]) -> List[Dict]:
-    builtin_global = []
+    """Return list of pattern matches following priority rules."""
+
+    builtin = []
+    user = []
     per_log = []
     for pat in patterns:
-        if pat.get("source") == "per_log":
+        src = pat.get("source")
+        if src in {"per_log", "log"}:
             per_log.append(pat)
+        elif src == "user":
+            user.append(pat)
         else:
-            builtin_global.append(pat)
+            builtin.append(pat)
 
     def _collect(pats):
         collected = []
@@ -72,9 +78,52 @@ def compute_optimal_matches(line: str, patterns: List[Dict]) -> List[Dict]:
                 i = prev[i]
         return list(reversed(result))
 
-    main_matches = _wis(_collect(builtin_global))
-    per_log_matches = _wis(_collect(per_log))
-    return sorted(main_matches + per_log_matches, key=lambda m: m["start"])
+    per_log_matches = _collect(per_log)
+
+    intervals = [(m["start"], m["end"]) for m in per_log_matches]
+
+    def _overlaps_any(start: int, end: int) -> bool:
+        for s, e in intervals:
+            if start < e and end > s:
+                return True
+        return False
+
+    others_raw = []
+    for pat in builtin + user:
+        regex = pat.get("regex") or pat.get("pattern")
+        try:
+            compiled = re.compile(regex)
+        except re.error:
+            continue
+        for m in compiled.finditer(line):
+            if _overlaps_any(m.start(), m.end()):
+                continue
+            priority = pat.get("priority", 1)
+            if pat.get("source") == "user":
+                priority += 1000
+            others_raw.append({
+                "start": m.start(),
+                "end": m.end(),
+                "length": m.end() - m.start(),
+                "match": m.group(),
+                "category": pat.get("category", "Unknown"),
+                "name": pat.get("name", "Unnamed"),
+                "source": pat.get("source", "unknown"),
+                "regex": regex,
+                "priority": priority,
+            })
+
+    main_matches = _wis(others_raw)
+    all_matches = main_matches + per_log_matches
+    all_matches.sort(key=lambda m: m["start"])
+
+    for i in range(len(all_matches)):
+        for j in range(i + 1, len(all_matches)):
+            if all_matches[i]["end"] > all_matches[j]["start"] and all_matches[j]["end"] > all_matches[i]["start"]:
+                all_matches[i]["overlap"] = True
+                all_matches[j]["overlap"] = True
+
+    return all_matches
 
 
 def find_matches_in_line(line: str, patterns: List[Dict]) -> List[Dict]:
@@ -116,10 +165,13 @@ def apply_highlighting(
             idx = pattern_index_map.get(key, 0)
             base_color = color_map.get(m["category"], "black")
             shaded = get_shaded_color(base_color, idx, total)
+            hover = adjust_lightness(shaded, 1.3)
 
-            tag = f"{m['category']}_{m['regex']}"
+            tag = f"{lineno}_{m['start']}_{m['end']}_{m['name']}"
             if tag not in text_widget.tag_names():
-                text_widget.tag_config(tag, background=shaded)
+                text_widget.tag_config(tag, background=shaded, underline=m.get('overlap', False))
+                text_widget.tag_bind(tag, "<Enter>", lambda e, t=tag, c=hover: text_widget.tag_config(t, background=c))
+                text_widget.tag_bind(tag, "<Leave>", lambda e, t=tag, c=shaded: text_widget.tag_config(t, background=c))
 
             start_idx = f"{lineno}.{m['start']}"
             end_idx = f"{lineno}.{m['end']}"
