@@ -4,6 +4,7 @@ from utils.json_utils import (
     load_all_patterns,
     load_cef_field_keys,
     get_log_name_for_file,
+    save_per_log_pattern,
 )
 from core.regex_highlighter import find_matches_in_line, apply_highlighting
 from gui.pattern_panel import PatternPanel
@@ -75,7 +76,10 @@ class AppWindow(tk.Frame):
 
         self.status_label = tk.Label(ctrl, text="Стр. 0 из 0")
         self.status_label.pack(side="left", padx=15)
+        self.coverage_label = tk.Label(ctrl, text="Покрытие: 0%")
+        self.coverage_label.pack(side="left", padx=15)
         tk.Button(ctrl, text="Создать паттерн", command=self.open_pattern_wizard).pack(side="left", padx=5)
+        tk.Button(ctrl, text="Сохранить паттерны", command=self.save_current_patterns).pack(side="left", padx=5)
         self.text_area.bind("<Motion>", self.on_hover)
         self.text_area.bind("<Leave>", lambda e: self.tooltip.hidetip())
 
@@ -99,6 +103,15 @@ class AppWindow(tk.Frame):
 
         for i, line in enumerate(self.logs, start=1):
             self.match_cache[i] = find_matches_in_line(line, active_patterns)
+
+    def _compute_coverage(self, active_names) -> float:
+        if not self.logs:
+            return 0.0
+        matched_lines = 0
+        for matches in self.match_cache.values():
+            if any(m["name"] in active_names for m in matches):
+                matched_lines += 1
+        return matched_lines / len(self.logs) * 100
 
     def render_page(self):
         self.text_area.delete(1.0, tk.END)
@@ -144,6 +157,9 @@ class AppWindow(tk.Frame):
                     seen.add(key)
 
         pattern_index_map = {key: i for i, key in enumerate(pattern_keys)}
+
+        coverage = self._compute_coverage(active_names)
+        self.coverage_label.config(text=f"Покрытие: {coverage:.1f}%")
 
         # Проверка на пересекающиеся паттерны
         def has_overlap(matches: list[dict]) -> bool:
@@ -271,3 +287,28 @@ class AppWindow(tk.Frame):
                 selections.append((fragment, full_line))
 
         return selections
+
+    def save_current_patterns(self):
+        if not getattr(self, "source_path", None):
+            messagebox.showinfo("Нет файла", "Сначала загрузите лог-файл")
+            return
+
+        default_name = get_log_name_for_file(self.source_path) or os.path.basename(self.source_path)
+        log_name = simpledialog.askstring(
+            "Имя набора", "Введите имя для пер-лог паттернов:",
+            initialvalue=default_name,
+            parent=self
+        )
+        if log_name is None:
+            return
+
+        matched_names = set()
+        for matches in self.match_cache.values():
+            for m in matches:
+                matched_names.add(m["name"])
+
+        patterns_to_save = [p for p in self.patterns if p["name"] in matched_names]
+        for pat in patterns_to_save:
+            save_per_log_pattern(self.source_path, pat["name"], pat, log_name=log_name)
+
+        messagebox.showinfo("Готово", "Паттерны сохранены.")
