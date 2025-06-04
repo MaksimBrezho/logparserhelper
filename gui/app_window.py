@@ -211,7 +211,7 @@ class AppWindow(tk.Frame):
         try:
             selected_lines = [s for s, _ in selections]
             fragment_context = [c for _, c in selections]
-            PatternWizardDialog(
+            wizard = PatternWizardDialog(
                 parent=self,
                 selected_lines=selected_lines,
                 fragment_context=fragment_context,
@@ -221,6 +221,11 @@ class AppWindow(tk.Frame):
                 source_file=source_file,
                 categories=categories
             )
+            wizard.grab_set()
+            self.wait_window(wizard)
+            self._load_patterns()
+            self._cache_matches()
+            self.render_page()
         except Exception as e:
             print(f"[Ошибка PatternWizard] {e}")
             messagebox.showerror("Ошибка", f"Не удалось открыть мастер: {e}")
