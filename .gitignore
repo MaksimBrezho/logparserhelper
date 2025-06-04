@@ -24,3 +24,4 @@ ENV/
 # Test artifacts
 *.out
 *.tmp
+.pytest_cache/
