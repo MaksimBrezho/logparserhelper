@@ -10,7 +10,7 @@ from utils.json_utils import save_user_pattern, save_per_log_pattern
 
 
 class PatternWizardDialog(tk.Toplevel):
-    def __init__(self, parent, selected_lines, context_lines, cef_fields, source_file, categories=None, fragment_context=None):
+    def __init__(self, parent, selected_lines, context_lines, cef_fields, source_file, log_name, categories=None, fragment_context=None):
 
         super().__init__(parent)
         self.title("Создание нового паттерна")
@@ -24,6 +24,7 @@ class PatternWizardDialog(tk.Toplevel):
         self.cef_fields = cef_fields
         self.categories = categories or []
         self.source_file = source_file
+        self.log_name = log_name
 
         self.page_size = 20
         self.current_page = 0
@@ -287,7 +288,7 @@ class PatternWizardDialog(tk.Toplevel):
         }
 
         save_user_pattern(pattern_data)
-        save_per_log_pattern(self.source_file, name, pattern_data)
+        save_per_log_pattern(self.source_file, name, pattern_data, log_name=self.log_name)
 
         messagebox.showinfo("Готово", f"Паттерн '{name}' сохранён.")
         self.destroy()

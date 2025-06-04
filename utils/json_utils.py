@@ -1,9 +1,12 @@
 import json
 import os
 
-USER_PATTERNS_PATH = os.path.join("data", "patterns_user.json")
+# Папка для пользовательских файлов
+USER_DATA_DIR = os.path.join("data", "user")
+
+USER_PATTERNS_PATH = os.path.join(USER_DATA_DIR, "patterns_user.json")
 BUILTIN_PATTERNS_PATH = os.path.join("data", "patterns_builtin.json")
-PER_LOG_PATTERNS_PATH = os.path.join("data", "per_log_patterns.json")
+PER_LOG_PATTERNS_PATH = os.path.join(USER_DATA_DIR, "per_log_patterns.json")
 CEF_FIELDS_PATH = os.path.join("data", "cef_fields.json")
 
 def load_all_patterns():
@@ -30,6 +33,7 @@ def save_user_patterns(patterns):
     """Сохраняет пользовательские шаблоны."""
     to_save = {"patterns": patterns}
     try:
+        os.makedirs(os.path.dirname(USER_PATTERNS_PATH), exist_ok=True)
         with open(USER_PATTERNS_PATH, "w", encoding="utf-8") as f:
             json.dump(to_save, f, indent=4, ensure_ascii=False)
     except IOError as e:
@@ -45,22 +49,40 @@ def save_user_pattern(new_pattern):
 
     save_user_patterns(user_patterns)
 
-def save_per_log_pattern(source_file, pattern_name, pattern_data):
+def save_per_log_pattern(source_file, pattern_name, pattern_data, log_name=None):
+    """Сохраняет паттерн, привязанный к конкретному логу.
+
+    Parameters
+    ----------
+    source_file : str
+        Полный путь к файлу лога.
+    pattern_name : str
+        Имя сохраняемого паттерна.
+    pattern_data : dict
+        Данные паттерна.
+    log_name : str | None
+        Пользовательское имя для набора паттернов. Если не задано,
+        используется имя файла лога.
+    """
     try:
+        log_key = log_name if log_name else os.path.basename(source_file)
+
         if os.path.exists(PER_LOG_PATTERNS_PATH):
             with open(PER_LOG_PATTERNS_PATH, "r", encoding="utf-8") as f:
                 all_data = json.load(f)
         else:
             all_data = {}
 
-        entry = all_data.get(source_file, {"patterns": {}})
+        entry = all_data.get(log_key, {"file": source_file, "patterns": {}})
+        entry["file"] = source_file
         entry["patterns"][pattern_name] = {
             "regex": pattern_data["regex"],
             "fields": pattern_data.get("fields", []),
-            "cef_field": pattern_data.get("cef_field")
+            "cef_field": pattern_data.get("cef_field"),
         }
-        all_data[source_file] = entry
+        all_data[log_key] = entry
 
+        os.makedirs(os.path.dirname(PER_LOG_PATTERNS_PATH), exist_ok=True)
         with open(PER_LOG_PATTERNS_PATH, "w", encoding="utf-8") as f:
             json.dump(all_data, f, indent=4, ensure_ascii=False)
     except Exception as e:

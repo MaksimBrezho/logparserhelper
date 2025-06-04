@@ -1,5 +1,5 @@
 import tkinter as tk
-from tkinter import filedialog, ttk, messagebox
+from tkinter import filedialog, ttk, messagebox, simpledialog
 from utils.json_utils import load_all_patterns, load_cef_field_keys
 from core.regex_highlighter import find_matches_in_line, apply_highlighting
 from gui.pattern_panel import PatternPanel
@@ -7,6 +7,7 @@ from utils.color_utils import generate_distinct_colors
 from gui.tooltip import ToolTip
 from gui.pattern_wizard import PatternWizardDialog
 import re
+import os
 
 
 class AppWindow(tk.Frame):
@@ -81,6 +82,7 @@ class AppWindow(tk.Frame):
         path = filedialog.askopenfilename(filetypes=[("Log files", "*.log *.txt"), ("All files", "*.*")])
         if not path:
             return
+        self.source_path = path
         with open(path, "r", encoding="utf-8") as f:
             self.logs = [line.rstrip() for line in f.readlines()]
         self.current_page = 0
@@ -206,6 +208,16 @@ class AppWindow(tk.Frame):
         # Получаем CEF-поля и путь к лог-файлу
         cef_fields = getattr(self.pattern_panel, "cef_fields", [])
         source_file = getattr(self, "source_path", "example.log")
+
+        # Имя набора паттернов
+        default_name = os.path.basename(source_file)
+        log_name = simpledialog.askstring(
+            "Имя набора", "Введите имя для пер-лог паттернов:",
+            initialvalue=default_name,
+            parent=self
+        )
+        if log_name is None:
+            return
         categories = sorted(set(p.get("category", "") for p in self.patterns))
 
         try:
@@ -219,6 +231,7 @@ class AppWindow(tk.Frame):
 
                 cef_fields=cef_fields,
                 source_file=source_file,
+                log_name=log_name,
                 categories=categories
             )
             wizard.grab_set()
