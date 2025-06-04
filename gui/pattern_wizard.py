@@ -14,7 +14,15 @@ class PatternWizardDialog(tk.Toplevel):
 
         super().__init__(parent)
         self.title("Создание нового паттерна")
-        self.geometry("800x600")
+        # Минимальный размер окна, но пользователь может растягивать его
+        self.minsize(800, 600)
+
+        menu_bar = tk.Menu(self)
+        file_menu = tk.Menu(menu_bar, tearoff=0)
+        file_menu.add_command(label="Сохранить", command=self._save, accelerator="Ctrl+S")
+        menu_bar.add_cascade(label="Файл", menu=file_menu)
+        self.config(menu=menu_bar)
+        self.bind_all("<Control-s>", lambda e: self._save())
 
         self.selected_lines = selected_lines
 
@@ -49,6 +57,7 @@ class PatternWizardDialog(tk.Toplevel):
         self.window_left_var = tk.StringVar()
         self.window_right_var = tk.StringVar()
         self.selected_field_vars = {}
+        self.show_advanced = tk.BooleanVar(value=False)
 
         self._build_ui()
         total_pages = (len(self.context_lines) - 1) // self.page_size + 1
@@ -71,7 +80,16 @@ class PatternWizardDialog(tk.Toplevel):
         ttk.Combobox(top_frame, textvariable=self.cef_field_var, values=self.cef_fields, width=15, state="readonly").pack(side="left", padx=5)
 
         # Флаги и параметры
-        flag_frame = ttk.Frame(self)
+        toggle_adv = ttk.Checkbutton(
+            self,
+            text="Показать дополнительные параметры",
+            variable=self.show_advanced,
+            command=self._toggle_advanced,
+        )
+        toggle_adv.pack(anchor="w", padx=5)
+
+        self.advanced_frame = ttk.Frame(self)
+        flag_frame = ttk.Frame(self.advanced_frame)
         flag_frame.pack(fill="x", pady=5)
 
         ci = ttk.Checkbutton(flag_frame, text="Игнорировать регистр", variable=self.case_insensitive)
@@ -113,6 +131,9 @@ class PatternWizardDialog(tk.Toplevel):
         self._add_tip(mx, "Максимальное число вариантов в перечислении")
         self._add_tip(wl, "Слева от совпадения")
         self._add_tip(wr, "Справа от совпадения")
+
+        # Скрыть блок с параметрами по умолчанию
+        self._toggle_advanced()
 
         # Регулярка
         regex_frame = ttk.LabelFrame(self, text="Сгенерированная регулярка")
@@ -163,11 +184,31 @@ class PatternWizardDialog(tk.Toplevel):
 
         # CEF-поля
         field_frame = ttk.LabelFrame(self, text="CEF-поля")
-        field_frame.pack(fill="x", padx=5, pady=5)
-        for field in self.cef_fields:
-            var = tk.BooleanVar()
-            self.selected_field_vars[field] = var
-            ttk.Checkbutton(field_frame, text=field, variable=var).pack(side="left")
+        field_frame.pack(fill="both", expand=True, padx=5, pady=5)
+
+        search_frame = ttk.Frame(field_frame)
+        search_frame.pack(fill="x")
+        ttk.Label(search_frame, text="Поиск:").pack(side="left")
+        self.cef_search_var = tk.StringVar()
+        search_entry = ttk.Entry(search_frame, textvariable=self.cef_search_var)
+        search_entry.pack(side="left", fill="x", expand=True, padx=5)
+        self.cef_search_var.trace_add("write", lambda *_: self._filter_cef_fields())
+
+        list_container = ttk.Frame(field_frame)
+        list_container.pack(fill="both", expand=True)
+        canvas = tk.Canvas(list_container, height=80)
+        scroll = ttk.Scrollbar(list_container, orient="vertical", command=canvas.yview)
+        canvas.configure(yscrollcommand=scroll.set)
+        canvas.pack(side="left", fill="both", expand=True)
+        scroll.pack(side="right", fill="y")
+        self.cef_field_inner = ttk.Frame(canvas)
+        self.cef_field_inner.bind(
+            "<Configure>",
+            lambda e: canvas.configure(scrollregion=canvas.bbox("all"))
+        )
+        canvas.create_window((0, 0), window=self.cef_field_inner, anchor="nw")
+
+        self._filter_cef_fields()
 
         # Кнопка сохранения
         ttk.Button(self, text="Сохранить", command=self._save).pack(pady=10)
@@ -354,3 +395,25 @@ class PatternWizardDialog(tk.Toplevel):
             del self.selected_lines[idx]
             del self.fragment_context[idx]
         self._generate_regex()
+
+    def _toggle_advanced(self):
+        if self.show_advanced.get():
+            self.advanced_frame.pack(fill="x", padx=5, pady=5)
+        else:
+            self.advanced_frame.forget()
+
+    def _filter_cef_fields(self):
+        query = self.cef_search_var.get().lower()
+        for widget in self.cef_field_inner.winfo_children():
+            widget.destroy()
+        for field in self.cef_fields:
+            if query in field.lower():
+                var = self.selected_field_vars.get(field)
+                if not var:
+                    var = tk.BooleanVar()
+                    self.selected_field_vars[field] = var
+                ttk.Checkbutton(
+                    self.cef_field_inner,
+                    text=field,
+                    variable=var
+                ).pack(anchor="w")
