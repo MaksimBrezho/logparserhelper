@@ -2,7 +2,7 @@ import tkinter as tk
 from tkinter import filedialog, ttk, messagebox, simpledialog
 from utils.json_utils import (
     load_all_patterns,
-    load_cef_field_keys,
+    load_cef_fields,
     get_log_name_for_file,
     save_per_log_pattern,
 )
@@ -26,7 +26,7 @@ class AppWindow(tk.Frame):
         self.tooltip = ToolTip(self)
         self.pattern_panel = None
         self.match_cache = {}  # lineno -> list of matches
-        self.cef_fields = load_cef_field_keys()
+        self.cef_fields = load_cef_fields()
 
         self._setup_widgets()
         self._load_patterns()

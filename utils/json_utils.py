@@ -115,12 +115,16 @@ def save_per_log_pattern(source_file, pattern_name, pattern_data, log_name=None)
         print(f"[Ошибка сохранения пер-лог паттерна] {e}")
 
 
-def load_cef_field_keys():
-    """Возвращает список ключей полей CEF из data/cef_fields.json."""
+def load_cef_fields():
+    """Возвращает список словарей с описанием CEF-полей."""
     try:
         with open(CEF_FIELDS_PATH, "r", encoding="utf-8") as f:
             data = json.load(f)
-            fields = data.get("fields", [])
-            return [fld.get("key") for fld in fields if "key" in fld]
+            return data.get("fields", [])
     except (FileNotFoundError, json.JSONDecodeError):
         return []
+
+
+def load_cef_field_keys():
+    """Возвращает список ключей CEF-полей."""
+    return [fld.get("key") for fld in load_cef_fields() if "key" in fld]
