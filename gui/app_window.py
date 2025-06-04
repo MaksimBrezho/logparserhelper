@@ -304,7 +304,10 @@ class AppWindow(tk.Frame):
             for m in matches:
                 matched_names.add(m["name"])
 
-        patterns_to_save = [p for p in self.patterns if p["name"] in matched_names]
+        patterns_to_save = [
+            p for p in self.patterns
+            if p["name"] in matched_names and p.get("enabled", True)
+        ]
         for pat in patterns_to_save:
             save_per_log_pattern(self.source_path, pat["name"], pat, log_name=log_name)
 
