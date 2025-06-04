@@ -12,8 +12,11 @@ from utils.color_utils import generate_distinct_colors
 from gui.tooltip import ToolTip
 from gui.pattern_wizard import PatternWizardDialog
 from utils.text_utils import compute_char_coverage
+import logging
 import re
 import os
+
+logger = logging.getLogger(__name__)
 
 
 class AppWindow(tk.Frame):
@@ -168,9 +171,15 @@ class AppWindow(tk.Frame):
 
         for line_num, matches in matches_to_show.items():
             if has_overlap(matches):
-                print(f"[WARNING] Overlapping patterns on line {line_num}:")
+                logger.warning("Overlapping patterns on line %s:", line_num)
                 for m in matches:
-                    print(f"  - {m['start']}..{m['end']} → {m['name']} ({m['regex']})")
+                    logger.warning(
+                        "  - %s..%s → %s (%s)",
+                        m['start'],
+                        m['end'],
+                        m['name'],
+                        m['regex'],
+                    )
 
         # Подсветка текста
         apply_highlighting(self.text_area, matches_to_show, active_names, color_map)
@@ -257,7 +266,7 @@ class AppWindow(tk.Frame):
             self._cache_matches()
             self.render_page()
         except Exception as e:
-            print(f"[Ошибка PatternWizard] {e}")
+            logger.error("[PatternWizard] %s", e)
             messagebox.showerror("Ошибка", f"Не удалось открыть мастер: {e}")
 
     def get_selected_lines(self):
