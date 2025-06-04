@@ -1,5 +1,5 @@
 import re
-from typing import List, Literal
+from typing import List, Literal, Optional
 from .enum_generator import EnumRegexGenerator
 from .generalizer import generalize_token
 from core.tokenizer.tree_tokenizer import build_token_tree, flatten_token_tree
@@ -8,10 +8,14 @@ KEY_VALUE_SEPARATORS = {'=', ':', '->', '=>', '<-'}
 
 DigitMode = Literal["standard", "always_fixed_length", "always_plus", "min_length", "fixed_and_min"]
 
-def build_draft_regex_from_examples(lines: List[str], *,
-                                     digit_mode: DigitMode = "standard",
-                                     digit_min_length: int = 1,
-                                     case_insensitive: bool = False) -> str:
+def build_draft_regex_from_examples(
+        lines: List[str], *,
+        digit_mode: DigitMode = "standard",
+        digit_min_length: int = 1,
+        case_insensitive: bool = False,
+        window_left: Optional[str] = None,
+        window_right: Optional[str] = None,
+) -> str:
     token_columns = []
     sep_columns = []
 
@@ -111,4 +115,12 @@ def build_draft_regex_from_examples(lines: List[str], *,
 
         i += 1
 
-    return ''.join(token_patterns)
+    core_pattern = ''.join(token_patterns)
+
+    if window_left:
+        core_pattern = f"(?<={re.escape(window_left)}){core_pattern}"
+    if window_right:
+        core_pattern = f"{core_pattern}(?={re.escape(window_right)})"
+
+    core_pattern = core_pattern.strip()
+    return core_pattern

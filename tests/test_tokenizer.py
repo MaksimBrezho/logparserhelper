@@ -1,5 +1,5 @@
 import pytest
-from core.tokenizer.tree_tokenizer import build_token_tree  # путь может отличаться в зависимости от структуры проекта
+from core.tokenizer.tree_tokenizer import build_token_tree, flatten_token_tree
 
 @pytest.mark.parametrize("input_str, expected", [
     ("abc def", [("abc", "token"), (" ", "sep"), ("def", "token")]),
@@ -15,5 +15,6 @@ from core.tokenizer.tree_tokenizer import build_token_tree  # путь може�
     ("a_b-c", [("a", "token"), ("_", "sep"), ("b", "token"), ("-", "sep"), ("c", "token")]),
 ])
 def test_tokenize(input_str, expected):
-    result = build_token_tree(input_str)
+    tree = build_token_tree(input_str)
+    result = flatten_token_tree(tree)
     assert result == expected, f"Failed for input: {input_str}"
