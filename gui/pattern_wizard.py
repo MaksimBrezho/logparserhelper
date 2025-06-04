@@ -437,13 +437,19 @@ class PatternWizardDialog(tk.Toplevel):
         for widget in self.cef_field_inner.winfo_children():
             widget.destroy()
         for field in self.cef_fields:
-            if query in field.lower():
-                var = self.selected_field_vars.get(field)
+            key = field.get("key", "")
+            name = field.get("name", "")
+            example = field.get("example", "")
+            if query in (key + name).lower():
+                var = self.selected_field_vars.get(key)
                 if not var:
                     var = tk.BooleanVar()
-                    self.selected_field_vars[field] = var
-                ttk.Checkbutton(
+                    self.selected_field_vars[key] = var
+                chk = ttk.Checkbutton(
                     self.cef_field_inner,
-                    text=field,
+                    text=key,
                     variable=var
-                ).pack(anchor="w")
+                )
+                chk.pack(anchor="w")
+                tip = f"{name}\nПример: {example}"
+                self._add_tip(chk, tip)
