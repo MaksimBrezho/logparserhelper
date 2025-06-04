@@ -62,3 +62,19 @@ def test_regex_window_lookaround():
     match = re.search(regex, 'prefix start val=1 end suffix')
     print(match)
     assert match
+
+
+def test_textual_token_alternatives():
+    logs = [
+        "Started receiving message from client",
+        "Started parsing message from client"
+    ]
+    regex = build_draft_regex_from_examples(
+        logs,
+        prefer_alternatives=True,
+        max_enum_options=5,
+        merge_by_common_prefix=True,
+    )
+    assert re.fullmatch(regex, logs[0])
+    assert re.fullmatch(regex, logs[1])
+    assert not re.fullmatch(regex, "Started ignoring message from client")
