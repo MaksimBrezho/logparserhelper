@@ -1,0 +1,26 @@
+import os
+import sys
+from typing import List, Dict
+sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
+
+from utils.text_utils import compute_char_coverage
+
+
+def test_compute_char_coverage():
+    logs = [
+        "error 123",
+        "abc 456",
+        "def"
+    ]
+    match_cache: Dict[int, List[Dict]] = {
+        1: [
+            {"name": "p1", "match": "error 123"}
+        ],
+        2: [
+            {"name": "p2", "match": "abc"}
+        ],
+        3: []
+    }
+    active_names = {"p1", "p2"}
+    coverage = compute_char_coverage(logs, match_cache, active_names)
+    assert round(coverage, 1) == round(11 / 17 * 100, 1)

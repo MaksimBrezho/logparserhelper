@@ -11,6 +11,7 @@ from gui.pattern_panel import PatternPanel
 from utils.color_utils import generate_distinct_colors
 from gui.tooltip import ToolTip
 from gui.pattern_wizard import PatternWizardDialog
+from utils.text_utils import compute_char_coverage
 import re
 import os
 
@@ -107,11 +108,7 @@ class AppWindow(tk.Frame):
     def _compute_coverage(self, active_names) -> float:
         if not self.logs:
             return 0.0
-        matched_lines = 0
-        for matches in self.match_cache.values():
-            if any(m["name"] in active_names for m in matches):
-                matched_lines += 1
-        return matched_lines / len(self.logs) * 100
+        return compute_char_coverage(self.logs, self.match_cache, active_names)
 
     def render_page(self):
         self.text_area.delete(1.0, tk.END)
