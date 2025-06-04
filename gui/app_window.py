@@ -207,11 +207,13 @@ class AppWindow(tk.Frame):
 
         try:
             selected_lines = [s for s, _ in selections]
-            context_lines = [c for _, c in selections]
+            fragment_context = [c for _, c in selections]
             PatternWizardDialog(
                 parent=self,
                 selected_lines=selected_lines,
-                context_lines=context_lines,
+                fragment_context=fragment_context,
+                context_lines=self.logs,
+
                 cef_fields=cef_fields,
                 source_file=source_file
             )
