@@ -78,3 +78,17 @@ def test_textual_token_alternatives():
     assert re.fullmatch(regex, logs[0])
     assert re.fullmatch(regex, logs[1])
     assert not re.fullmatch(regex, "Started ignoring message from client")
+
+
+def test_merge_text_tokens_simple():
+    logs = [
+        "Database Connection Error",
+        "Database Error",
+    ]
+    regex = build_draft_regex_from_examples(
+        logs,
+        merge_text_tokens=True,
+    )
+    assert re.fullmatch(regex, logs[0])
+    assert re.fullmatch(regex, logs[1])
+    assert not re.fullmatch(regex, "Database Failure")
