@@ -319,7 +319,12 @@ class PatternWizardDialog(tk.Toplevel):
                     for m in matches
                 ]
 
-        apply_highlighting(self.match_text, matches_by_line, {"preview"}, {"preview": "yellow"})
+        apply_highlighting(
+            self.match_text,
+            matches_by_line,
+            {"preview"},
+            {"preview": "yellow"},
+        )
 
         self.page_label_var.set(f"Страница {self.current_page + 1} из {total_pages}")
 
@@ -351,7 +356,8 @@ class PatternWizardDialog(tk.Toplevel):
             "category": category,
             "fields": fields,
             "enabled": True,
-            "priority": 1000
+            "priority": 1000,
+            "log_key": self.log_name,
         }
 
         save_user_pattern(pattern_data)

@@ -7,10 +7,10 @@ from utils.color_utils import get_shaded_color
 def compute_optimal_matches(line: str, patterns: List[Dict]) -> List[Dict]:
     """Find optimal non-overlapping matches.
 
-    User patterns are allowed to overlap with each other, but they will still
-    be excluded by built-in patterns according to priority. This behaviour
-    ensures user-defined patterns for the current log can be shown even if
-    they intersect one another.
+    User patterns from the current log (marked with ``source='log'``) may
+    overlap with each other, but they must not intersect with built-in or
+    global user patterns. Built-in and global patterns remain mutually
+    exclusive based on their priority.
     """
 
     all_matches = []
@@ -33,9 +33,9 @@ def compute_optimal_matches(line: str, patterns: List[Dict]) -> List[Dict]:
                 "priority": pat.get("priority", 1),
             })
 
-    # разделяем на обычные и разрешённые к перекрытию (пользовательские)
-    overlap_allowed = [m for m in all_matches if m.get("source") == "user"]
-    base_matches = [m for m in all_matches if m.get("source") != "user"]
+    # per-log паттерны могут перекрываться только между собой
+    log_allowed = [m for m in all_matches if m.get("source") == "log"]
+    base_matches = [m for m in all_matches if m.get("source") != "log"]
 
     base_matches.sort(key=lambda m: m["end"])
     n = len(base_matches)
@@ -71,8 +71,13 @@ def compute_optimal_matches(line: str, patterns: List[Dict]) -> List[Dict]:
             i = prev[i]
     result = list(reversed(result))
 
-    # добавляем пользовательские совпадения (они могут пересекаться друг с другом)
-    result.extend(overlap_allowed)
+    # добавляем лог‑специфичные совпадения, если они не пересекаются с базовыми
+    filtered_logs = []
+    for m in log_allowed:
+        if all(m["end"] <= b["start"] or m["start"] >= b["end"] for b in result):
+            filtered_logs.append(m)
+
+    result.extend(filtered_logs)
     result.sort(key=lambda m: (m["start"], m["end"]))
     return result
 
@@ -93,6 +98,9 @@ def apply_highlighting(
             text_widget.tag_delete(tag)
         except tk.TclError:
             pass
+
+    tag_order: Dict[str, int] = {}
+    order_counter = 0
 
     pattern_keys = []
     seen = set()
@@ -118,6 +126,9 @@ def apply_highlighting(
             tag = f"{m['category']}_{m['regex']}"
             if tag not in text_widget.tag_names():
                 text_widget.tag_config(tag, background=shaded)
+                text_widget.tag_lower(tag)
+                tag_order[tag] = order_counter
+                order_counter += 1
 
             start_idx = f"{lineno}.{m['start']}"
             end_idx = f"{lineno}.{m['end']}"
@@ -147,3 +158,8 @@ def apply_highlighting(
 
         for s, e in overlaps:
             text_widget.tag_add("overlap", f"{lineno}.{s}", f"{lineno}.{e}")
+
+    for tag in sorted(tag_order, key=tag_order.get):
+        text_widget.tag_raise(tag)
+
+    return tag_order

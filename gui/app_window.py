@@ -15,6 +15,20 @@ from utils.text_utils import compute_char_coverage
 import re
 import os
 
+DEFAULT_CATEGORIES = [
+    "Date",
+    "Time",
+    "User",
+    "Host",
+    "Path",
+    "Message",
+    "Event",
+    "Status",
+    "Level",
+    "ID",
+    "Misc",
+]
+
 
 class AppWindow(tk.Frame):
     def __init__(self, master=None):
@@ -27,6 +41,8 @@ class AppWindow(tk.Frame):
         self.pattern_panel = None
         self.match_cache = {}  # lineno -> list of matches
         self.cef_fields = load_cef_fields()
+        self.tag_order = {}
+        self._raised_tag = None
 
         self._setup_widgets()
         self._load_patterns()
@@ -83,10 +99,20 @@ class AppWindow(tk.Frame):
         tk.Button(ctrl, text="Сохранить паттерны", command=self.save_current_patterns).pack(side="left", padx=5)
         tk.Button(ctrl, text="Генератор CEF", command=self.open_code_generator).pack(side="left", padx=5)
         self.text_area.bind("<Motion>", self.on_hover)
-        self.text_area.bind("<Leave>", lambda e: self.tooltip.hidetip())
+        self.text_area.bind(
+            "<Leave>",
+            lambda e: (
+                self.tooltip.hidetip(),
+                self._restore_tag_order(),
+            ),
+        )
 
-    def _load_patterns(self):
+    def _load_patterns(self, log_key=None):
         self.patterns = load_all_patterns()
+        if log_key:
+            for p in self.patterns:
+                if p.get("log_key") == log_key:
+                    p["source"] = "log"
 
     def load_log_file(self):
         path = filedialog.askopenfilename(filetypes=[("Log files", "*.log *.txt"), ("All files", "*.*")])
@@ -95,6 +121,8 @@ class AppWindow(tk.Frame):
         self.source_path = path
         with open(path, "r", encoding="utf-8") as f:
             self.logs = [line.rstrip() for line in f.readlines()]
+        self.current_log_key = get_log_name_for_file(path)
+        self._load_patterns(self.current_log_key)
         self.current_page = 0
         self._cache_matches()
         self.render_page()
@@ -174,7 +202,12 @@ class AppWindow(tk.Frame):
                     print(f"  - {m['start']}..{m['end']} → {m['name']} ({m['regex']})")
 
         # Подсветка текста
-        apply_highlighting(self.text_area, matches_to_show, active_names, color_map)
+        self.tag_order = apply_highlighting(
+            self.text_area,
+            matches_to_show,
+            active_names,
+            color_map,
+        )
 
         # Обновление панели справа
         self.pattern_panel.patterns = visible_patterns
@@ -209,13 +242,34 @@ class AppWindow(tk.Frame):
             index = self.text_area.index(f"@{event.x},{event.y}")
             tags = self.text_area.tag_names(index)
             if tags:
-                tag = tags[0]
+                pattern_tags = [t for t in tags if t not in {"overlap", "sel"}]
+                if "overlap" in tags and len(pattern_tags) > 1 and hasattr(self, "tag_order"):
+                    bottom = min(pattern_tags, key=lambda t: self.tag_order.get(t, 0))
+                    self.text_area.tag_raise(bottom)
+                    self._raised_tag = bottom
+                else:
+                    if getattr(self, "_raised_tag", None):
+                        for tg in sorted(self.tag_order, key=self.tag_order.get):
+                            self.text_area.tag_raise(tg)
+                        self._raised_tag = None
+
+                tag = pattern_tags[0] if pattern_tags else tags[0]
                 category, *_ = tag.split("_", 1)
                 self.tooltip.schedule(f"Категория: {category}", event.x_root, event.y_root)
             else:
                 self.tooltip.unschedule()
+                if getattr(self, "_raised_tag", None):
+                    for tg in sorted(self.tag_order, key=self.tag_order.get):
+                        self.text_area.tag_raise(tg)
+                    self._raised_tag = None
         except Exception:
             self.tooltip.unschedule()
+
+    def _restore_tag_order(self):
+        if self.tag_order:
+            for tg in sorted(self.tag_order, key=self.tag_order.get):
+                self.text_area.tag_raise(tg)
+        self._raised_tag = None
 
     def open_pattern_wizard(self):
         selections = self.get_selected_lines()
@@ -236,7 +290,9 @@ class AppWindow(tk.Frame):
         )
         if log_name is None:
             return
-        categories = sorted(set(p.get("category", "") for p in self.patterns))
+        categories = sorted(
+            set(p.get("category", "") for p in self.patterns).union(DEFAULT_CATEGORIES)
+        )
 
         try:
             selected_lines = [s for s, _ in selections]
@@ -254,7 +310,7 @@ class AppWindow(tk.Frame):
             )
             wizard.grab_set()
             self.wait_window(wizard)
-            self._load_patterns()
+            self._load_patterns(self.current_log_key)
             self._cache_matches()
             self.render_page()
         except Exception as e:
