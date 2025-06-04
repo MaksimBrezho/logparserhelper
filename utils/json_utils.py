@@ -1,5 +1,6 @@
 import json
 import os
+import logging
 
 # Папка для пользовательских файлов
 USER_DATA_DIR = os.path.join("data", "user")
@@ -37,7 +38,7 @@ def save_user_patterns(patterns):
         with open(USER_PATTERNS_PATH, "w", encoding="utf-8") as f:
             json.dump(to_save, f, indent=4, ensure_ascii=False)
     except IOError as e:
-        print(f"[Ошибка сохранения] {e}")
+        logging.error("[Ошибка сохранения] %s", e)
 
 def save_user_pattern(new_pattern):
     patterns = load_all_patterns()
@@ -112,7 +113,7 @@ def save_per_log_pattern(source_file, pattern_name, pattern_data, log_name=None)
         with open(PER_LOG_PATTERNS_PATH, "w", encoding="utf-8") as f:
             json.dump(all_data, f, indent=4, ensure_ascii=False)
     except Exception as e:
-        print(f"[Ошибка сохранения пер-лог паттерна] {e}")
+        logging.error("[Ошибка сохранения пер-лог паттерна] %s", e)
 
 
 def load_cef_fields():

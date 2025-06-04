@@ -1,6 +1,7 @@
 import tkinter as tk
 from tkinter import ttk, messagebox
 import re
+import logging
 
 from core.regex_highlighter import apply_highlighting
 from gui.tooltip import ToolTip
@@ -233,7 +234,7 @@ class PatternWizardDialog(tk.Toplevel):
 
     def _generate_regex(self):
         try:
-            print("[Wizard] Генерация регулярного выражения...")
+            logging.info("[Wizard] Генерация регулярного выражения...")
 
             # Поддержка генерации даже при одной строке
             lines = self.selected_lines
@@ -252,7 +253,7 @@ class PatternWizardDialog(tk.Toplevel):
                 prefer_alternatives=self.prefer_alternatives_var.get(),
                 merge_by_common_prefix=self.merge_by_prefix_var.get(),
             )
-            print("[Wizard] Получено:", draft)
+            logging.info("[Wizard] Получено: %s", draft)
 
             self._push_history(draft)
             self.regex_var.set(draft)
@@ -261,7 +262,7 @@ class PatternWizardDialog(tk.Toplevel):
             self._apply_regex()
 
         except Exception as e:
-            print(f"[Wizard Error] {e}")
+            logging.error("[Wizard Error] %s", e)
             messagebox.showerror("Ошибка генерации", str(e))
 
     def _apply_regex(self):

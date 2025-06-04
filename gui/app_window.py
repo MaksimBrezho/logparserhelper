@@ -1,5 +1,6 @@
 import tkinter as tk
 from tkinter import filedialog, ttk, messagebox, simpledialog
+import logging
 from utils.json_utils import (
     load_all_patterns,
     load_cef_fields,
@@ -197,9 +198,15 @@ class AppWindow(tk.Frame):
 
         for line_num, matches in matches_to_show.items():
             if has_overlap(matches):
-                print(f"[WARNING] Overlapping patterns on line {line_num}:")
+                logging.warning("Overlapping patterns on line %s:", line_num)
                 for m in matches:
-                    print(f"  - {m['start']}..{m['end']} → {m['name']} ({m['regex']})")
+                    logging.warning(
+                        "  - %s..%s → %s (%s)",
+                        m["start"],
+                        m["end"],
+                        m["name"],
+                        m["regex"],
+                    )
 
         # Подсветка текста
         self.tag_order = apply_highlighting(
@@ -314,7 +321,7 @@ class AppWindow(tk.Frame):
             self._cache_matches()
             self.render_page()
         except Exception as e:
-            print(f"[Ошибка PatternWizard] {e}")
+            logging.error("PatternWizard error: %s", e)
             messagebox.showerror("Ошибка", f"Не удалось открыть мастер: {e}")
 
     def get_selected_lines(self):
@@ -378,5 +385,5 @@ class AppWindow(tk.Frame):
             dlg.grab_set()
             self.wait_window(dlg)
         except Exception as e:
-            print(f"[CodeGenerator Error] {e}")
+            logging.error("CodeGenerator error: %s", e)
             messagebox.showerror("Ошибка", f"Не удалось открыть генератор: {e}")
