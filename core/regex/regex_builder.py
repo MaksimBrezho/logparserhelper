@@ -3,6 +3,7 @@ from typing import List, Literal, Optional
 from .enum_generator import EnumRegexGenerator
 from .generalizer import generalize_token
 from core.tokenizer.tree_tokenizer import build_token_tree, flatten_token_tree
+from utils.text_utils import common_prefix, common_suffix
 
 KEY_VALUE_SEPARATORS = {'=', ':', '->', '=>', '<-'}
 
@@ -15,6 +16,10 @@ def build_draft_regex_from_examples(
         case_insensitive: bool = False,
         window_left: Optional[str] = None,
         window_right: Optional[str] = None,
+        merge_text_tokens: bool = True,
+        max_enum_options: int = 10,
+        prefer_alternatives: bool = True,
+        merge_by_common_prefix: bool = True,
 ) -> str:
     token_columns = []
     sep_columns = []
@@ -97,11 +102,21 @@ def build_draft_regex_from_examples(
                 continue
 
         col = token_columns[i]
+        unique_values = list(dict.fromkeys(col))
 
         if all(re.fullmatch(r'\d+', tok) for tok in col):
             pattern = digit_pattern(col)
-        elif len(set(col)) == 1:
-            pattern = re.escape(col[0])
+        elif len(unique_values) == 1:
+            pattern = re.escape(unique_values[0])
+        elif prefer_alternatives and all(re.fullmatch(r'[A-Za-z]+', t) for t in unique_values) and len(unique_values) <= max_enum_options:
+            if merge_by_common_prefix and len(unique_values) > 1:
+                prefix = common_prefix(unique_values)
+                suffix = common_suffix(unique_values)
+                stripped = [t[len(prefix):len(t)-len(suffix) if suffix else len(t)] for t in unique_values]
+                alt = EnumRegexGenerator(stripped, ignore_case=case_insensitive, sort_by_length=True).generate()
+                pattern = f"{re.escape(prefix)}{alt}{re.escape(suffix)}"
+            else:
+                pattern = EnumRegexGenerator(unique_values, ignore_case=case_insensitive, sort_by_length=True).generate()
         elif all(re.fullmatch(r'[A-Z]+', t) for t in col):
             pattern = EnumRegexGenerator(col, ignore_case=case_insensitive, sort_by_length=True).generate()
         else:
