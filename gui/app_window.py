@@ -1,6 +1,6 @@
 import tkinter as tk
 from tkinter import filedialog, ttk, messagebox
-from utils.json_utils import load_all_patterns
+from utils.json_utils import load_all_patterns, load_cef_field_keys
 from core.regex_highlighter import find_matches_in_line, apply_highlighting
 from gui.pattern_panel import PatternPanel
 from utils.color_utils import generate_distinct_colors
@@ -19,6 +19,7 @@ class AppWindow(tk.Frame):
         self.tooltip = ToolTip(self)
         self.pattern_panel = None
         self.match_cache = {}  # lineno -> list of matches
+        self.cef_fields = load_cef_field_keys()
 
         self._setup_widgets()
         self._load_patterns()
@@ -51,6 +52,7 @@ class AppWindow(tk.Frame):
         )
         self.pattern_panel.grid(row=0, column=2, sticky="ns", padx=5)
         self.pattern_panel.grid_propagate(False)
+        self.pattern_panel.cef_fields = self.cef_fields
 
         ctrl = tk.Frame(self)
         ctrl.grid(row=1, column=0, sticky="w", padx=5, pady=5)
@@ -204,6 +206,7 @@ class AppWindow(tk.Frame):
         # Получаем CEF-поля и путь к лог-файлу
         cef_fields = getattr(self.pattern_panel, "cef_fields", [])
         source_file = getattr(self, "source_path", "example.log")
+        categories = sorted(set(p.get("category", "") for p in self.patterns))
 
         try:
             selected_lines = [s for s, _ in selections]
@@ -215,7 +218,8 @@ class AppWindow(tk.Frame):
                 context_lines=self.logs,
 
                 cef_fields=cef_fields,
-                source_file=source_file
+                source_file=source_file,
+                categories=categories
             )
         except Exception as e:
             print(f"[Ошибка PatternWizard] {e}")

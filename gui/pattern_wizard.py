@@ -10,7 +10,7 @@ from utils.json_utils import save_user_pattern, save_per_log_pattern
 
 
 class PatternWizardDialog(tk.Toplevel):
-    def __init__(self, parent, selected_lines, context_lines, cef_fields, source_file, fragment_context=None):
+    def __init__(self, parent, selected_lines, context_lines, cef_fields, source_file, categories=None, fragment_context=None):
 
         super().__init__(parent)
         self.title("Создание нового паттерна")
@@ -22,6 +22,7 @@ class PatternWizardDialog(tk.Toplevel):
         
         self.context_lines = context_lines
         self.cef_fields = cef_fields
+        self.categories = categories or []
         self.source_file = source_file
 
         self.page_size = 20
@@ -35,6 +36,7 @@ class PatternWizardDialog(tk.Toplevel):
         self.category_var = tk.StringVar()
         self.regex_var = tk.StringVar()
         self.case_insensitive = tk.BooleanVar()
+        self.cef_field_var = tk.StringVar()
         self.digit_mode_var = tk.StringVar(value="standard")
         self.digit_min_length_var = tk.IntVar(value=1)
         self.merge_text_tokens_var = tk.BooleanVar(value=True)
@@ -59,7 +61,10 @@ class PatternWizardDialog(tk.Toplevel):
         ttk.Entry(top_frame, textvariable=self.name_var, width=20).pack(side="left", padx=5)
 
         ttk.Label(top_frame, text="Категория:").pack(side="left")
-        ttk.Entry(top_frame, textvariable=self.category_var, width=20).pack(side="left", padx=5)
+        ttk.Combobox(top_frame, textvariable=self.category_var, values=self.categories, width=20, state="readonly").pack(side="left", padx=5)
+
+        ttk.Label(top_frame, text="CEF-поле:").pack(side="left")
+        ttk.Combobox(top_frame, textvariable=self.cef_field_var, values=self.cef_fields, width=15, state="readonly").pack(side="left", padx=5)
 
         # Флаги и параметры
         flag_frame = ttk.Frame(self)
@@ -242,6 +247,7 @@ class PatternWizardDialog(tk.Toplevel):
         category = self.category_var.get().strip()
         regex = self.regex_entry.get("1.0", tk.END).strip()
         fields = [f for f, v in self.selected_field_vars.items() if v.get()]
+        cef_field = self.cef_field_var.get().strip()
 
         if not name or not category or not regex:
             messagebox.showwarning("Незаполненные поля", "Имя, категория и регулярка обязательны.")
@@ -252,6 +258,7 @@ class PatternWizardDialog(tk.Toplevel):
             "regex": regex,
             "category": category,
             "fields": fields,
+            "cef_field": cef_field,
             "enabled": True,
             "priority": 1000
         }

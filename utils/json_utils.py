@@ -4,6 +4,7 @@ import os
 USER_PATTERNS_PATH = os.path.join("data", "patterns_user.json")
 BUILTIN_PATTERNS_PATH = os.path.join("data", "patterns_builtin.json")
 PER_LOG_PATTERNS_PATH = os.path.join("data", "per_log_patterns.json")
+CEF_FIELDS_PATH = os.path.join("data", "cef_fields.json")
 
 def load_all_patterns():
     """Загружает объединённые пользовательские и встроенные шаблоны."""
@@ -55,7 +56,8 @@ def save_per_log_pattern(source_file, pattern_name, pattern_data):
         entry = all_data.get(source_file, {"patterns": {}})
         entry["patterns"][pattern_name] = {
             "regex": pattern_data["regex"],
-            "fields": pattern_data.get("fields", [])
+            "fields": pattern_data.get("fields", []),
+            "cef_field": pattern_data.get("cef_field")
         }
         all_data[source_file] = entry
 
@@ -63,3 +65,14 @@ def save_per_log_pattern(source_file, pattern_name, pattern_data):
             json.dump(all_data, f, indent=4, ensure_ascii=False)
     except Exception as e:
         print(f"[Ошибка сохранения пер-лог паттерна] {e}")
+
+
+def load_cef_field_keys():
+    """Возвращает список ключей полей CEF из data/cef_fields.json."""
+    try:
+        with open(CEF_FIELDS_PATH, "r", encoding="utf-8") as f:
+            data = json.load(f)
+            fields = data.get("fields", [])
+            return [fld.get("key") for fld in fields if "key" in fld]
+    except (FileNotFoundError, json.JSONDecodeError):
+        return []
