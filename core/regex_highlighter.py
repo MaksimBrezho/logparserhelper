@@ -5,100 +5,76 @@ from utils.color_utils import get_shaded_color
 
 
 def compute_optimal_matches(line: str, patterns: List[Dict]) -> List[Dict]:
-    """Return optimal non-overlapping matches for the given line.
-
-    Parameters
-    ----------
-    line : str
-        Line to analyse.
-    patterns : list[dict]
-        Patterns loaded from ``json_utils``. Three classes are supported:
-
-        ``builtin``
-            Patterns shipped with the application.
-        ``user``
-            Patterns created by the user and applied globally.
-        ``log``
-            Patterns tied to a specific log file.
-
-    Notes
-    -----
-    All matches produced by ``log`` patterns are kept. Matches from ``builtin``
-    and ``user`` patterns that intersect these log-specific matches are
-    discarded. The weighted selection algorithm is then applied only to the
-    remaining matches to avoid overlaps and maximise the sum of their
-    ``priority`` values.
-    """
-
-    log_matches: List[Dict] = []
-    other_matches: List[Dict] = []
-
+    builtin_global = []
+    per_log = []
     for pat in patterns:
-        regex = pat.get("regex") or pat.get("pattern")
-        try:
-            compiled = re.compile(regex)
-        except re.error:
-            continue
-        for m in compiled.finditer(line):
-            entry = {
-                "start": m.start(),
-                "end": m.end(),
-                "length": m.end() - m.start(),
-                "match": m.group(),
-                "category": pat.get("category", "Unknown"),
-                "name": pat.get("name", "Unnamed"),
-                "source": pat.get("source", "unknown"),
-                "regex": regex,
-                "priority": pat.get("priority", 1),
-            }
-            if entry["source"] == "log":
-                log_matches.append(entry)
+        if pat.get("source") == "per_log":
+            per_log.append(pat)
+        else:
+            builtin_global.append(pat)
+
+    def _collect(pats):
+        collected = []
+        for pat in pats:
+            regex = pat.get("regex") or pat.get("pattern")
+            try:
+                compiled = re.compile(regex)
+            except re.error:
+                continue
+            for m in compiled.finditer(line):
+                collected.append({
+                    "start": m.start(),
+                    "end": m.end(),
+                    "length": m.end() - m.start(),
+                    "match": m.group(),
+                    "category": pat.get("category", "Unknown"),
+                    "name": pat.get("name", "Unnamed"),
+                    "source": pat.get("source", "unknown"),
+                    "regex": regex,
+                    "priority": pat.get("priority", 1),
+                })
+        return collected
+
+    def _wis(items):
+        if not items:
+            return []
+        items.sort(key=lambda m: m["end"])
+        n = len(items)
+        dp = [0] * n
+        prev = [-1] * n
+
+        def find_last_non_conflicting(i):
+            for j in range(i - 1, -1, -1):
+                if items[j]["end"] <= items[i]["start"]:
+                    return j
+            return -1
+
+        for i in range(n):
+            incl = items[i]["priority"]
+            j = find_last_non_conflicting(i)
+            if j != -1:
+                incl += dp[j]
+            excl = dp[i - 1] if i > 0 else 0
+            if incl > excl:
+                dp[i] = incl
+                prev[i] = j
             else:
-                other_matches.append(entry)
+                dp[i] = excl
+                prev[i] = -2  # special marker: skip this match
 
-    def _overlap(a: Dict, b: Dict) -> bool:
-        return not (a["end"] <= b["start"] or a["start"] >= b["end"])
+        result = []
+        i = n - 1
+        while i >= 0:
+            if prev[i] == -2:
+                i -= 1
+            else:
+                result.append(items[i])
+                i = prev[i]
+        return list(reversed(result))
 
-    filtered_other = [
-        m for m in other_matches
-        if not any(_overlap(m, lm) for lm in log_matches)
-    ]
-
-    filtered_other.sort(key=lambda m: m["end"])
-    n = len(filtered_other)
-    dp = [0] * n
-    prev = [-1] * n
-
-    def find_last_non_conflicting(i: int) -> int:
-        for j in range(i - 1, -1, -1):
-            if filtered_other[j]["end"] <= filtered_other[i]["start"]:
-                return j
-        return -1
-
-    for i in range(n):
-        incl = filtered_other[i]["priority"]
-        j = find_last_non_conflicting(i)
-        if j != -1:
-            incl += dp[j]
-        excl = dp[i - 1] if i > 0 else 0
-        if incl > excl:
-            dp[i] = incl
-            prev[i] = j
-        else:
-            dp[i] = excl
-            prev[i] = -2  # special marker: skip this match
-
-    result: List[Dict] = []
-    i = n - 1
-    while i >= 0:
-        if prev[i] == -2:
-            i -= 1
-        else:
-            result.append(filtered_other[i])
-            i = prev[i]
-
-    result.extend(log_matches)
-    return sorted(result, key=lambda m: m["start"])
+    main_matches = _wis(_collect(builtin_global))
+    per_log_matches = _wis(_collect(per_log))
+    return sorted(main_matches + per_log_matches, key=lambda m: m["start"])
 
 
 def find_matches_in_line(line: str, patterns: List[Dict]) -> List[Dict]:
