@@ -1,4 +1,10 @@
 import re
+import os
+import sys
+
+# Ensure the core package is importable when running tests directly
+sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
+
 from core.regex.regex_builder import build_draft_regex_from_examples
 
 
@@ -43,3 +49,15 @@ def test_regex_modes_case_insensitive():
     assert re.fullmatch(regex, "type=ERROR")
     assert re.fullmatch(regex, "type=info")
     assert not re.fullmatch(regex, "type=warn")
+
+
+def test_regex_window_lookaround():
+    logs = ['val=1', 'val=22']
+    regex = build_draft_regex_from_examples(
+        logs,
+        window_left='start ',
+        window_right=' end'
+    )
+    assert regex.startswith('(?<=') and '(?=' in regex
+    match = re.search(regex, 'prefix start val=1 end suffix')
+    assert match
