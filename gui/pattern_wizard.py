@@ -30,6 +30,8 @@ class PatternWizardDialog(tk.Toplevel):
         self.regex_history = []
 
         self.page_label_var = tk.StringVar()
+        self.show_mode = tk.StringVar(value="matches")
+        self.total_pages = 1
 
         # Vars
         self.name_var = tk.StringVar()
@@ -49,6 +51,7 @@ class PatternWizardDialog(tk.Toplevel):
 
         self._build_ui()
         total_pages = (len(self.context_lines) - 1) // self.page_size + 1
+        self.total_pages = total_pages
         self.page_label_var.set(f"Страница {self.current_page + 1} из {total_pages}")
         self._generate_regex()
 
@@ -145,6 +148,12 @@ class PatternWizardDialog(tk.Toplevel):
         self.match_text = tk.Text(self.match_frame, height=10)
         self.match_text.pack(fill="both", expand=True)
 
+        mode_frame = ttk.Frame(self)
+        mode_frame.pack(fill="x", pady=5)
+        ttk.Radiobutton(mode_frame, text="Совпадения", variable=self.show_mode, value="matches", command=self._on_mode_change).pack(side="left", padx=5)
+        ttk.Radiobutton(mode_frame, text="Отсутствие", variable=self.show_mode, value="absent", command=self._on_mode_change).pack(side="left", padx=5)
+        ttk.Radiobutton(mode_frame, text="Конфликты", variable=self.show_mode, value="conflicts", command=self._on_mode_change).pack(side="left", padx=5)
+
         nav = ttk.Frame(self)
         nav.pack(fill="x")
         ttk.Button(nav, text="←", command=self.prev_page).pack(side="left")
@@ -212,32 +221,46 @@ class PatternWizardDialog(tk.Toplevel):
         self.match_text.config(state="normal")
         self.match_text.delete("1.0", tk.END)
 
-        start = self.current_page * self.page_size
-        end = min(start + self.page_size, len(self.context_lines))
-        lines = self.context_lines[start:end]
+        lines_info = []
+        mode = self.show_mode.get()
+        for idx, line in enumerate(self.context_lines, start=1):
+            found = list(regex.finditer(line))
+            if mode == "matches" and found:
+                lines_info.append((idx, line, found))
+            elif mode == "absent" and not found:
+                lines_info.append((idx, line, found))
+            elif mode == "conflicts" and len(found) >= 2:
+                lines_info.append((idx, line, found))
 
-        for line in lines:
+        total_pages = (len(lines_info) - 1) // self.page_size + 1 if lines_info else 1
+        self.total_pages = total_pages
+        if self.current_page >= total_pages:
+            self.current_page = max(0, total_pages - 1)
+
+        start = self.current_page * self.page_size
+        end = min(start + self.page_size, len(lines_info))
+        page_lines = lines_info[start:end]
+
+        for _, line, _ in page_lines:
             self.match_text.insert(tk.END, line + "\n")
 
         matches_by_line = {}
-        for idx, line in enumerate(lines, start=1):
-            matches = [
-                {
-                    "start": m.start(),
-                    "end": m.end(),
-                    "category": "preview",
-                    "name": "preview",
-                    "regex": pattern,
-                    "priority": 1,
-                }
-                for m in regex.finditer(line)
-            ]
+        for idx, (_, _, matches) in enumerate(page_lines, start=1):
             if matches:
-                matches_by_line[idx] = matches
+                matches_by_line[idx] = [
+                    {
+                        "start": m.start(),
+                        "end": m.end(),
+                        "category": "preview",
+                        "name": "preview",
+                        "regex": pattern,
+                        "priority": 1,
+                    }
+                    for m in matches
+                ]
 
         apply_highlighting(self.match_text, matches_by_line, {"preview"}, {"preview": "yellow"})
 
-        total_pages = (len(self.context_lines) - 1) // self.page_size + 1
         self.page_label_var.set(f"Страница {self.current_page + 1} из {total_pages}")
 
         self.match_text.config(state="disabled")
@@ -280,10 +303,13 @@ class PatternWizardDialog(tk.Toplevel):
             self._apply_regex()
 
     def next_page(self):
-        total_pages = (len(self.context_lines) - 1) // self.page_size
-        if self.current_page < total_pages:
+        if self.current_page + 1 < self.total_pages:
             self.current_page += 1
             self._apply_regex()
+
+    def _on_mode_change(self):
+        self.current_page = 0
+        self._apply_regex()
 
     def _push_history(self, regex):
         if not self.regex_history or self.regex_history[-1] != regex:
