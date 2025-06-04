@@ -78,6 +78,7 @@ def compute_optimal_matches(line: str, patterns: List[Dict]) -> List[Dict]:
 
 
 def find_matches_in_line(line: str, patterns: List[Dict]) -> List[Dict]:
+    """Convenience wrapper around :func:`compute_optimal_matches`."""
     return compute_optimal_matches(line, patterns)
 
 
