@@ -47,8 +47,15 @@ class PatternWizardDialog(tk.Toplevel):
         self.category_var = tk.StringVar()
         self.regex_var = tk.StringVar()
         self.case_insensitive = tk.BooleanVar()
-        self.cef_field_var = tk.StringVar()
-        self.digit_mode_var = tk.StringVar(value="standard")
+        self.digit_mode_values = {
+            "Стандартный": "standard",
+            "Фиксированная длина": "always_fixed_length",
+            "Всегда \\d+": "always_plus",
+            "С выставлением минимальной длины": "min_length",
+            "Фикс. или мин.": "fixed_and_min",
+        }
+        self.digit_mode_display_var = tk.StringVar(value="Фиксированная длина")
+        self.digit_mode_var = tk.StringVar(value="always_fixed_length")
         self.digit_min_length_var = tk.IntVar(value=1)
         self.merge_text_tokens_var = tk.BooleanVar(value=True)
         self.prefer_alternatives_var = tk.BooleanVar(value=True)
@@ -76,53 +83,65 @@ class PatternWizardDialog(tk.Toplevel):
         ttk.Label(top_frame, text="Категория:").pack(side="left")
         ttk.Combobox(top_frame, textvariable=self.category_var, values=self.categories, width=20, state="readonly").pack(side="left", padx=5)
 
-        ttk.Label(top_frame, text="CEF-поле:").pack(side="left")
-        ttk.Combobox(top_frame, textvariable=self.cef_field_var, values=self.cef_fields, width=15, state="readonly").pack(side="left", padx=5)
+        param_frame = ttk.Frame(self)
+        param_frame.pack(fill="both", expand=True)
 
-        # Флаги и параметры
+        left_frame = ttk.Frame(param_frame)
+        left_frame.pack(side="left", fill="y", padx=5, pady=5)
+
         toggle_adv = ttk.Checkbutton(
-            self,
+            left_frame,
             text="Показать дополнительные параметры",
             variable=self.show_advanced,
             command=self._toggle_advanced,
         )
-        toggle_adv.pack(anchor="w", padx=5)
+        toggle_adv.pack(anchor="w")
 
-        self.advanced_frame = ttk.Frame(self)
-        flag_frame = ttk.Frame(self.advanced_frame)
-        flag_frame.pack(fill="x", pady=5)
+        self.advanced_frame = ttk.Frame(left_frame)
 
-        ci = ttk.Checkbutton(flag_frame, text="Игнорировать регистр", variable=self.case_insensitive)
-        ci.pack(side="left", padx=5)
+        ci = ttk.Checkbutton(self.advanced_frame, text="Игнорировать регистр", variable=self.case_insensitive)
+        ci.pack(anchor="w", pady=2)
 
-        ttk.Label(flag_frame, text="Режим чисел:").pack(side="left")
-        dm = ttk.Combobox(flag_frame, textvariable=self.digit_mode_var, values=[
-            "standard", "always_fixed_length", "always_plus", "min_length", "fixed_and_min"
-        ], width=18, state="readonly")
-        dm.pack(side="left", padx=5)
+        row = ttk.Frame(self.advanced_frame)
+        row.pack(anchor="w")
+        ttk.Label(row, text="Режим чисел:").pack(side="left")
+        dm = ttk.Combobox(row, textvariable=self.digit_mode_display_var, values=list(self.digit_mode_values.keys()), width=22, state="readonly")
+        dm.pack(side="left", padx=2)
+        self.digit_mode_display_var.trace_add("write", lambda *_: self._on_digit_mode_change())
 
-        ttk.Label(flag_frame, text="Мин. длина числа:").pack(side="left")
-        ml = ttk.Spinbox(flag_frame, from_=1, to=10, textvariable=self.digit_min_length_var, width=5)
-        ml.pack(side="left", padx=5)
+        row = ttk.Frame(self.advanced_frame)
+        row.pack(anchor="w")
+        ttk.Label(row, text="Мин. длина числа:").pack(side="left")
+        ml = ttk.Spinbox(row, from_=1, to=10, textvariable=self.digit_min_length_var, width=5)
+        ml.pack(side="left", padx=2)
 
-        mt = ttk.Checkbutton(flag_frame, text="Объединять текст", variable=self.merge_text_tokens_var)
-        mt.pack(side="left", padx=5)
-        pa = ttk.Checkbutton(flag_frame, text="Использовать |", variable=self.prefer_alternatives_var)
-        pa.pack(side="left", padx=5)
-        bp = ttk.Checkbutton(flag_frame, text="Префикс. слияние", variable=self.merge_by_prefix_var)
-        bp.pack(side="left", padx=5)
-        ttk.Label(flag_frame, text="Макс. вариантов:").pack(side="left")
-        mx = ttk.Spinbox(flag_frame, from_=1, to=20, textvariable=self.max_enum_options_var, width=5)
-        mx.pack(side="left", padx=5)
-        ttk.Label(flag_frame, text="Окно слева:").pack(side="left")
-        wl = ttk.Entry(flag_frame, textvariable=self.window_left_var, width=8)
+        mt = ttk.Checkbutton(self.advanced_frame, text="Объединять текст", variable=self.merge_text_tokens_var)
+        mt.pack(anchor="w", pady=2)
+        pa = ttk.Checkbutton(self.advanced_frame, text="Использовать |", variable=self.prefer_alternatives_var)
+        pa.pack(anchor="w", pady=2)
+        bp = ttk.Checkbutton(self.advanced_frame, text="Префикс. слияние", variable=self.merge_by_prefix_var)
+        bp.pack(anchor="w", pady=2)
+
+        row = ttk.Frame(self.advanced_frame)
+        row.pack(anchor="w")
+        ttk.Label(row, text="Макс. вариантов:").pack(side="left")
+        mx = ttk.Spinbox(row, from_=1, to=20, textvariable=self.max_enum_options_var, width=5)
+        mx.pack(side="left", padx=2)
+
+        row = ttk.Frame(self.advanced_frame)
+        row.pack(anchor="w")
+        ttk.Label(row, text="Окно слева:").pack(side="left")
+        wl = ttk.Entry(row, textvariable=self.window_left_var, width=8)
         wl.pack(side="left", padx=2)
-        ttk.Label(flag_frame, text="Окно справа:").pack(side="left")
-        wr = ttk.Entry(flag_frame, textvariable=self.window_right_var, width=8)
+        ttk.Label(row, text="Окно справа:").pack(side="left")
+        wr = ttk.Entry(row, textvariable=self.window_right_var, width=8)
         wr.pack(side="left", padx=2)
 
+        right_frame = ttk.Frame(param_frame)
+        right_frame.pack(side="left", fill="both", expand=True)
+
         # Tooltips
-        self._add_tip(ci, "Регулярка будет нечувствительна к регистру")
+        self._add_tip(ci, "Регулярное выражение будет нечувствительно к регистру")
         self._add_tip(dm, "Как обрабатывать числа в строках")
         self._add_tip(ml, "Минимальная длина числа при генерации")
         self._add_tip(mt, "Объединять разные слова в один блок")
@@ -135,8 +154,8 @@ class PatternWizardDialog(tk.Toplevel):
         # Скрыть блок с параметрами по умолчанию
         self._toggle_advanced()
 
-        # Регулярка
-        regex_frame = ttk.LabelFrame(self, text="Сгенерированная регулярка")
+        # Регулярное выражение
+        regex_frame = ttk.LabelFrame(right_frame, text="Сгенерированное регулярное выражение")
         regex_frame.pack(fill="x", padx=5, pady=5)
         self.regex_entry = tk.Text(regex_frame, height=2)
         self.regex_entry.pack(fill="x")
@@ -144,8 +163,13 @@ class PatternWizardDialog(tk.Toplevel):
         undo_btn = ttk.Button(regex_frame, text="← Предыдущая", command=self._undo_regex)
         undo_btn.pack(side="right", padx=5)
 
+        btn_frame = ttk.Frame(right_frame)
+        btn_frame.pack(fill="x")
+        ttk.Button(btn_frame, text="Обновить", command=self._generate_regex).pack(side="left", padx=2)
+        ttk.Button(btn_frame, text="Применить", command=self._apply_regex).pack(side="left", padx=2)
+
         # Примеры
-        example_frame = ttk.LabelFrame(self, text="Примеры")
+        example_frame = ttk.LabelFrame(right_frame, text="Примеры")
         example_frame.pack(fill="both", expand=True, padx=5, pady=5)
         self.example_list = tk.Listbox(example_frame, height=4)
         self.example_list.pack(side="left", fill="both", expand=True)
@@ -157,12 +181,6 @@ class PatternWizardDialog(tk.Toplevel):
         btns.pack(side="left", fill="y", padx=5)
         ttk.Button(btns, text="Удалить", command=self._remove_example).pack(pady=2)
         ttk.Button(btns, text="Добавить выделение", command=self._add_selection).pack(pady=2)
-
-        # Кнопка генерации
-        ttk.Button(self, text="Обновить регулярку", command=self._generate_regex).pack(pady=5)
-
-        # Кнопка применения
-        ttk.Button(self, text="Применить к строкам", command=self._apply_regex).pack(pady=5)
 
         # Список совпадений
         self.match_frame = ttk.LabelFrame(self, text="Совпадения")
@@ -183,8 +201,8 @@ class PatternWizardDialog(tk.Toplevel):
         ttk.Button(nav, text="→", command=self.next_page).pack(side="left")
 
         # CEF-поля
-        field_frame = ttk.LabelFrame(self, text="CEF-поля")
-        field_frame.pack(fill="both", expand=True, padx=5, pady=5)
+        field_frame = ttk.LabelFrame(left_frame, text="CEF-поля")
+        field_frame.pack(fill="both", expand=True, pady=5)
 
         search_frame = ttk.Frame(field_frame)
         search_frame.pack(fill="x")
@@ -215,7 +233,7 @@ class PatternWizardDialog(tk.Toplevel):
 
     def _generate_regex(self):
         try:
-            print("[Wizard] Генерация регулярки...")
+            print("[Wizard] Генерация регулярного выражения...")
 
             # Поддержка генерации даже при одной строке
             lines = self.selected_lines
@@ -312,10 +330,19 @@ class PatternWizardDialog(tk.Toplevel):
         category = self.category_var.get().strip()
         regex = self.regex_entry.get("1.0", tk.END).strip()
         fields = [f for f, v in self.selected_field_vars.items() if v.get()]
-        cef_field = self.cef_field_var.get().strip()
 
         if not name or not category or not regex:
-            messagebox.showwarning("Незаполненные поля", "Имя, категория и регулярка обязательны.")
+            messagebox.showwarning(
+                "Незаполненные поля",
+                "Имя, категория и регулярное выражение обязательны."
+            )
+            return
+
+        if not fields:
+            messagebox.showwarning(
+                "Незаполненные поля",
+                "Необходимо выбрать хотя бы одно CEF-поле."
+            )
             return
 
         pattern_data = {
@@ -323,7 +350,6 @@ class PatternWizardDialog(tk.Toplevel):
             "regex": regex,
             "category": category,
             "fields": fields,
-            "cef_field": cef_field,
             "enabled": True,
             "priority": 1000
         }
@@ -396,9 +422,13 @@ class PatternWizardDialog(tk.Toplevel):
             del self.fragment_context[idx]
         self._generate_regex()
 
+    def _on_digit_mode_change(self, *_):
+        disp = self.digit_mode_display_var.get()
+        self.digit_mode_var.set(self.digit_mode_values.get(disp, "standard"))
+
     def _toggle_advanced(self):
         if self.show_advanced.get():
-            self.advanced_frame.pack(fill="x", padx=5, pady=5)
+            self.advanced_frame.pack(fill="x", pady=5)
         else:
             self.advanced_frame.forget()
 
