@@ -2,19 +2,30 @@ import tkinter as tk
 from tkinter import ttk, messagebox
 import re
 
+from core.regex_highlighter import apply_highlighting
+from gui.tooltip import ToolTip
+
 from core.regex.regex_builder import build_draft_regex_from_examples
 from utils.json_utils import save_user_pattern, save_per_log_pattern
 
 
 class PatternWizardDialog(tk.Toplevel):
-    def __init__(self, parent, selected_lines, cef_fields, source_file):
+    def __init__(self, parent, selected_lines, context_lines, cef_fields, source_file, fragment_context=None):
         super().__init__(parent)
         self.title("Создание нового паттерна")
         self.geometry("800x600")
 
         self.selected_lines = selected_lines
+        self.fragment_context = fragment_context or []
+        self.context_lines = context_lines
         self.cef_fields = cef_fields
         self.source_file = source_file
+
+        self.page_size = 20
+        self.current_page = 0
+        self.regex_history = []
+
+        self.page_label_var = tk.StringVar()
 
         # Vars
         self.name_var = tk.StringVar()
@@ -23,10 +34,17 @@ class PatternWizardDialog(tk.Toplevel):
         self.case_insensitive = tk.BooleanVar()
         self.digit_mode_var = tk.StringVar(value="standard")
         self.digit_min_length_var = tk.IntVar(value=1)
+        self.merge_text_tokens_var = tk.BooleanVar(value=True)
+        self.prefer_alternatives_var = tk.BooleanVar(value=True)
+        self.merge_by_prefix_var = tk.BooleanVar(value=True)
+        self.max_enum_options_var = tk.IntVar(value=10)
+        self.window_left_var = tk.StringVar()
+        self.window_right_var = tk.StringVar()
         self.selected_field_vars = {}
-        self.match_check_vars = []
 
         self._build_ui()
+        total_pages = (len(self.context_lines) - 1) // self.page_size + 1
+        self.page_label_var.set(f"Страница {self.current_page + 1} из {total_pages}")
         self._generate_regex()
 
     def _build_ui(self):
@@ -44,21 +62,68 @@ class PatternWizardDialog(tk.Toplevel):
         flag_frame = ttk.Frame(self)
         flag_frame.pack(fill="x", pady=5)
 
-        ttk.Checkbutton(flag_frame, text="Case Insensitive", variable=self.case_insensitive).pack(side="left", padx=5)
+        ci = ttk.Checkbutton(flag_frame, text="Игнорировать регистр", variable=self.case_insensitive)
+        ci.pack(side="left", padx=5)
 
-        ttk.Label(flag_frame, text="Digit Mode:").pack(side="left")
-        ttk.Combobox(flag_frame, textvariable=self.digit_mode_var, values=[
+        ttk.Label(flag_frame, text="Режим чисел:").pack(side="left")
+        dm = ttk.Combobox(flag_frame, textvariable=self.digit_mode_var, values=[
             "standard", "always_fixed_length", "always_plus", "min_length", "fixed_and_min"
-        ], width=20, state="readonly").pack(side="left", padx=5)
+        ], width=18, state="readonly")
+        dm.pack(side="left", padx=5)
 
-        ttk.Label(flag_frame, text="Min Digit Len:").pack(side="left")
-        ttk.Spinbox(flag_frame, from_=1, to=10, textvariable=self.digit_min_length_var, width=5).pack(side="left", padx=5)
+        ttk.Label(flag_frame, text="Мин. длина числа:").pack(side="left")
+        ml = ttk.Spinbox(flag_frame, from_=1, to=10, textvariable=self.digit_min_length_var, width=5)
+        ml.pack(side="left", padx=5)
+
+        mt = ttk.Checkbutton(flag_frame, text="Объединять текст", variable=self.merge_text_tokens_var)
+        mt.pack(side="left", padx=5)
+        pa = ttk.Checkbutton(flag_frame, text="Использовать |", variable=self.prefer_alternatives_var)
+        pa.pack(side="left", padx=5)
+        bp = ttk.Checkbutton(flag_frame, text="Префикс. слияние", variable=self.merge_by_prefix_var)
+        bp.pack(side="left", padx=5)
+        ttk.Label(flag_frame, text="Макс. вариантов:").pack(side="left")
+        mx = ttk.Spinbox(flag_frame, from_=1, to=20, textvariable=self.max_enum_options_var, width=5)
+        mx.pack(side="left", padx=5)
+        ttk.Label(flag_frame, text="Окно слева:").pack(side="left")
+        wl = ttk.Entry(flag_frame, textvariable=self.window_left_var, width=8)
+        wl.pack(side="left", padx=2)
+        ttk.Label(flag_frame, text="Окно справа:").pack(side="left")
+        wr = ttk.Entry(flag_frame, textvariable=self.window_right_var, width=8)
+        wr.pack(side="left", padx=2)
+
+        # Tooltips
+        self._add_tip(ci, "Регулярка будет нечувствительна к регистру")
+        self._add_tip(dm, "Как обрабатывать числа в строках")
+        self._add_tip(ml, "Минимальная длина числа при генерации")
+        self._add_tip(mt, "Объединять разные слова в один блок")
+        self._add_tip(pa, "Предпочитать варианты через |")
+        self._add_tip(bp, "Объединять по общему префиксу")
+        self._add_tip(mx, "Максимальное число вариантов в перечислении")
+        self._add_tip(wl, "Слева от совпадения")
+        self._add_tip(wr, "Справа от совпадения")
 
         # Регулярка
         regex_frame = ttk.LabelFrame(self, text="Сгенерированная регулярка")
         regex_frame.pack(fill="x", padx=5, pady=5)
         self.regex_entry = tk.Text(regex_frame, height=2)
         self.regex_entry.pack(fill="x")
+
+        undo_btn = ttk.Button(regex_frame, text="← Предыдущая", command=self._undo_regex)
+        undo_btn.pack(side="right", padx=5)
+
+        # Примеры
+        example_frame = ttk.LabelFrame(self, text="Примеры")
+        example_frame.pack(fill="both", expand=True, padx=5, pady=5)
+        self.example_list = tk.Listbox(example_frame, height=4)
+        self.example_list.pack(side="left", fill="both", expand=True)
+
+        for s in self.selected_lines:
+            self.example_list.insert(tk.END, s)
+
+        btns = ttk.Frame(example_frame)
+        btns.pack(side="left", fill="y", padx=5)
+        ttk.Button(btns, text="Удалить", command=self._remove_example).pack(pady=2)
+        ttk.Button(btns, text="Добавить выделение", command=self._add_selection).pack(pady=2)
 
         # Кнопка генерации
         ttk.Button(self, text="Обновить регулярку", command=self._generate_regex).pack(pady=5)
@@ -69,8 +134,14 @@ class PatternWizardDialog(tk.Toplevel):
         # Список совпадений
         self.match_frame = ttk.LabelFrame(self, text="Совпадения")
         self.match_frame.pack(fill="both", expand=True, padx=5, pady=5)
-        self.match_listbox = tk.Listbox(self.match_frame)
-        self.match_listbox.pack(fill="both", expand=True)
+        self.match_text = tk.Text(self.match_frame, height=10)
+        self.match_text.pack(fill="both", expand=True)
+
+        nav = ttk.Frame(self)
+        nav.pack(fill="x")
+        ttk.Button(nav, text="←", command=self.prev_page).pack(side="left")
+        ttk.Label(nav, textvariable=self.page_label_var).pack(side="left", padx=5)
+        ttk.Button(nav, text="→", command=self.next_page).pack(side="left")
 
         # CEF-поля
         field_frame = ttk.LabelFrame(self, text="CEF-поля")
@@ -96,10 +167,17 @@ class PatternWizardDialog(tk.Toplevel):
                 lines,
                 digit_mode=self.digit_mode_var.get(),
                 digit_min_length=self.digit_min_length_var.get(),
-                case_insensitive=self.case_insensitive.get()
+                case_insensitive=self.case_insensitive.get(),
+                window_left=self.window_left_var.get() or None,
+                window_right=self.window_right_var.get() or None,
+                merge_text_tokens=self.merge_text_tokens_var.get(),
+                max_enum_options=self.max_enum_options_var.get(),
+                prefer_alternatives=self.prefer_alternatives_var.get(),
+                merge_by_common_prefix=self.merge_by_prefix_var.get(),
             )
             print("[Wizard] Получено:", draft)
 
+            self._push_history(draft)
             self.regex_var.set(draft)
             self.regex_entry.delete("1.0", tk.END)
             self.regex_entry.insert(tk.END, draft)
@@ -121,13 +199,40 @@ class PatternWizardDialog(tk.Toplevel):
             messagebox.showerror("Ошибка компиляции", str(e))
             return
 
-        self.match_listbox.delete(0, tk.END)
-        self.match_check_vars.clear()
+        self._push_history(pattern)
 
-        for line in self.selected_lines:
-            match = regex.search(line)
-            if match:
-                self.match_listbox.insert(tk.END, line)
+        self.match_text.config(state="normal")
+        self.match_text.delete("1.0", tk.END)
+
+        start = self.current_page * self.page_size
+        end = min(start + self.page_size, len(self.context_lines))
+        lines = self.context_lines[start:end]
+
+        for line in lines:
+            self.match_text.insert(tk.END, line + "\n")
+
+        matches_by_line = {}
+        for idx, line in enumerate(lines, start=1):
+            matches = [
+                {
+                    "start": m.start(),
+                    "end": m.end(),
+                    "category": "preview",
+                    "name": "preview",
+                    "regex": pattern,
+                    "priority": 1,
+                }
+                for m in regex.finditer(line)
+            ]
+            if matches:
+                matches_by_line[idx] = matches
+
+        apply_highlighting(self.match_text, matches_by_line, {"preview"}, {"preview": "yellow"})
+
+        total_pages = (len(self.context_lines) - 1) // self.page_size + 1
+        self.page_label_var.set(f"Страница {self.current_page + 1} из {total_pages}")
+
+        self.match_text.config(state="disabled")
 
     def _save(self):
         name = self.name_var.get().strip()
@@ -153,3 +258,62 @@ class PatternWizardDialog(tk.Toplevel):
 
         messagebox.showinfo("Готово", f"Паттерн '{name}' сохранён.")
         self.destroy()
+
+    def _add_tip(self, widget, text):
+        tip = ToolTip(widget)
+        widget.bind("<Enter>", lambda e: tip.schedule(text, e.x_root, e.y_root))
+        widget.bind("<Leave>", lambda e: tip.unschedule())
+
+    def prev_page(self):
+        if self.current_page > 0:
+            self.current_page -= 1
+            self._apply_regex()
+
+    def next_page(self):
+        total_pages = (len(self.context_lines) - 1) // self.page_size
+        if self.current_page < total_pages:
+            self.current_page += 1
+            self._apply_regex()
+
+    def _push_history(self, regex):
+        if not self.regex_history or self.regex_history[-1] != regex:
+            self.regex_history.append(regex)
+
+    def _undo_regex(self):
+        if len(self.regex_history) < 2:
+            return
+        self.regex_history.pop()
+        prev = self.regex_history[-1]
+        self.regex_entry.delete("1.0", tk.END)
+        self.regex_entry.insert(tk.END, prev)
+        self._apply_regex()
+
+    def _add_selection(self):
+        try:
+            start = self.match_text.index(tk.SEL_FIRST)
+            end = self.match_text.index(tk.SEL_LAST)
+        except tk.TclError:
+            return
+
+        start_line = int(start.split(".")[0])
+        end_line = int(end.split(".")[0])
+        if start_line != end_line:
+            messagebox.showwarning("Выделение", "Выберите часть одной строки")
+            return
+
+        fragment = self.match_text.get(start, end)
+        full_line = self.match_text.get(f"{start_line}.0", f"{start_line}.end")
+        self.selected_lines.append(fragment)
+        self.fragment_context.append(full_line)
+        self.example_list.insert(tk.END, fragment)
+        self._generate_regex()
+
+    def _remove_example(self):
+        sel = list(self.example_list.curselection())
+        if not sel:
+            return
+        for idx in reversed(sel):
+            self.example_list.delete(idx)
+            del self.selected_lines[idx]
+            del self.fragment_context[idx]
+        self._generate_regex()

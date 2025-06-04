@@ -5,6 +5,97 @@ from .generalizer import generalize_token
 from core.tokenizer.tree_tokenizer import build_token_tree, flatten_token_tree
 from utils.text_utils import common_prefix, common_suffix
 
+
+def _lcs(a: List[str], b: List[str]) -> List[str]:
+    """Return the longest common subsequence of two lists."""
+    dp = [[0] * (len(b) + 1) for _ in range(len(a) + 1)]
+    for i in range(len(a)):
+        for j in range(len(b)):
+            if a[i] == b[j]:
+                dp[i + 1][j + 1] = dp[i][j] + 1
+            else:
+                dp[i + 1][j + 1] = max(dp[i + 1][j], dp[i][j + 1])
+
+    i, j = len(a), len(b)
+    result = []
+    while i > 0 and j > 0:
+        if a[i - 1] == b[j - 1]:
+            result.append(a[i - 1])
+            i -= 1
+            j -= 1
+        elif dp[i - 1][j] >= dp[i][j - 1]:
+            i -= 1
+        else:
+            j -= 1
+    return list(reversed(result))
+
+
+def _merge_tokens_regex(lines_tokens: List[List[str]], *, case_insensitive: bool) -> str:
+    """Merge text tokens across lines using common anchors."""
+    if not lines_tokens:
+        return ''
+
+    anchors = lines_tokens[0]
+    for tokens in lines_tokens[1:]:
+        anchors = _lcs(anchors, tokens)
+        if not anchors:
+            break
+
+    segments_per_line = []
+    for tokens in lines_tokens:
+        segs = []
+        idx = 0
+        for anchor in anchors:
+            try:
+                j = tokens.index(anchor, idx)
+            except ValueError:
+                j = len(tokens)
+            segs.append(' '.join(tokens[idx:j]))
+            idx = j + 1
+        segs.append(' '.join(tokens[idx:]))
+        segments_per_line.append(segs)
+
+    def build_seg_regex(values: List[str], with_space: bool) -> str:
+        unique_vals = list(dict.fromkeys(values))
+        if len(unique_vals) == 1 and unique_vals[0] == '':
+            return ''
+        if len(unique_vals) == 2 and '' in unique_vals:
+            other = unique_vals[0] if unique_vals[1] == '' else unique_vals[1]
+            base = re.escape(other)
+            prefix = "\\s+" if with_space else ""
+            return rf'(?:{prefix}{base})?'
+        if len(unique_vals) == 1:
+            base = re.escape(unique_vals[0])
+            prefix = "\\s+" if with_space else ""
+            return rf'{prefix}{base}'
+        alt_vals = [v for v in unique_vals if v != '']
+        alt = EnumRegexGenerator(alt_vals, ignore_case=case_insensitive, sort_by_length=True).generate()
+        if '' in unique_vals:
+            prefix = "\\s+" if with_space else ""
+            return rf'(?:{prefix}{alt})?'
+        prefix = "\\s+" if with_space else ""
+        return rf'{prefix}{alt}'
+
+    parts: List[str] = []
+    seg_count = len(anchors) + 1
+
+    # first segment (no leading whitespace)
+    seg_regex = build_seg_regex([segments[0] for segments in segments_per_line], with_space=False)
+    if seg_regex:
+        parts.append(seg_regex)
+
+    if anchors:
+        parts.append(re.escape(anchors[0]))
+
+    for idx in range(1, seg_count):
+        seg_regex = build_seg_regex([segments[idx] for segments in segments_per_line], with_space=True)
+        if seg_regex:
+            parts.append(seg_regex)
+        if idx < len(anchors):
+            parts.append(r'\s+' + re.escape(anchors[idx]))
+
+    return ''.join(parts)
+
 KEY_VALUE_SEPARATORS = {'=', ':', '->', '=>', '<-'}
 
 DigitMode = Literal["standard", "always_fixed_length", "always_plus", "min_length", "fixed_and_min"]
@@ -23,6 +114,7 @@ def build_draft_regex_from_examples(
 ) -> str:
     token_columns = []
     sep_columns = []
+    tokens_by_line: List[List[str]] = []
 
     for line in lines:
         tree = build_token_tree(line.strip())
@@ -30,6 +122,8 @@ def build_draft_regex_from_examples(
 
         tokens = [val for val, kind in pairs if kind == 'token']
         seps = [val for val, kind in pairs if kind == 'sep']
+
+        tokens_by_line.append(tokens)
 
         if not token_columns:
             token_columns = [[] for _ in tokens]
@@ -39,6 +133,15 @@ def build_draft_regex_from_examples(
             token_columns[i].append(token)
         for i, sep in enumerate(seps):
             sep_columns[i].append(sep)
+
+    token_counts = [len(toks) for toks in tokens_by_line]
+    if merge_text_tokens and len(set(token_counts)) > 1:
+        core = _merge_tokens_regex(tokens_by_line, case_insensitive=case_insensitive)
+        if window_left:
+            core = f"(?<={re.escape(window_left)})" + core
+        if window_right:
+            core = core + f"(?={re.escape(window_right)})"
+        return core
 
     def digit_pattern(values: List[str]) -> str:
         lengths = [len(v) for v in values]

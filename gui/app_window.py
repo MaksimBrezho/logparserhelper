@@ -196,8 +196,8 @@ class AppWindow(tk.Frame):
             self.tooltip.unschedule()
 
     def open_pattern_wizard(self):
-        lines = self.get_selected_lines()
-        if not lines:
+        selections = self.get_selected_lines()
+        if not selections:
             messagebox.showwarning("Нет выделения", "Пожалуйста, выделите строки для генерации паттерна.")
             return
 
@@ -206,9 +206,13 @@ class AppWindow(tk.Frame):
         source_file = getattr(self, "source_path", "example.log")
 
         try:
+            selected_lines = [s for s, _ in selections]
+            fragment_context = [c for _, c in selections]
             PatternWizardDialog(
                 parent=self,
-                selected_lines=lines,
+                selected_lines=selected_lines,
+                fragment_context=fragment_context,
+                context_lines=self.logs,
                 cef_fields=cef_fields,
                 source_file=source_file
             )
@@ -217,8 +221,26 @@ class AppWindow(tk.Frame):
             messagebox.showerror("Ошибка", f"Не удалось открыть мастер: {e}")
 
     def get_selected_lines(self):
+        """Return selected fragments along with their full line context."""
         try:
-            selection = self.text_area.get(tk.SEL_FIRST, tk.SEL_LAST)
-            return [line for line in selection.splitlines() if line.strip()]
+            start = self.text_area.index(tk.SEL_FIRST)
+            end = self.text_area.index(tk.SEL_LAST)
         except tk.TclError:
             return []
+
+        start_line = int(start.split('.')[0])
+        end_line = int(end.split('.')[0])
+
+        selections = []
+        for line_no in range(start_line, end_line + 1):
+            line_start = f"{line_no}.0"
+            line_end = f"{line_no}.end"
+            full_line = self.text_area.get(line_start, line_end)
+
+            sel_start = start if line_no == start_line else line_start
+            sel_end = end if line_no == end_line else line_end
+            fragment = self.text_area.get(sel_start, sel_end)
+            if fragment.strip():
+                selections.append((fragment, full_line))
+
+        return selections
