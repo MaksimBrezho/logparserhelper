@@ -213,6 +213,7 @@ class AppWindow(tk.Frame):
                 selected_lines=selected_lines,
                 fragment_context=fragment_context,
                 context_lines=self.logs,
+
                 cef_fields=cef_fields,
                 source_file=source_file
             )

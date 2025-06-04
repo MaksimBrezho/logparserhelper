@@ -11,12 +11,15 @@ from utils.json_utils import save_user_pattern, save_per_log_pattern
 
 class PatternWizardDialog(tk.Toplevel):
     def __init__(self, parent, selected_lines, context_lines, cef_fields, source_file, fragment_context=None):
+
         super().__init__(parent)
         self.title("Создание нового паттерна")
         self.geometry("800x600")
 
         self.selected_lines = selected_lines
+
         self.fragment_context = fragment_context or []
+        
         self.context_lines = context_lines
         self.cef_fields = cef_fields
         self.source_file = source_file
