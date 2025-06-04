@@ -57,12 +57,32 @@ def compute_char_coverage(
     float
         Coverage percentage from 0 to 100.
     """
-    total = sum(count_significant_chars(line) for line in logs)
+    total = 0
+    covered = 0
+
+    for idx, line in enumerate(logs, start=1):
+        significant_idx = [i for i, ch in enumerate(line) if ch.isalnum()]
+        total += len(significant_idx)
+
+        covered_idx = set()
+        for m in matches_by_line.get(idx, []):
+            if m.get("name") not in active_names:
+                continue
+
+            start = m.get("start")
+            end = m.get("end")
+            if start is not None and end is not None:
+                segment = line[start:end]
+                base = start
+            else:
+                segment = m.get("match", "")
+                base = 0
+            for pos, ch in enumerate(segment, start=base):
+                if ch.isalnum():
+                    covered_idx.add(pos)
+
+        covered += len(covered_idx)
+
     if total == 0:
         return 0.0
-    covered = 0
-    for lineno, matches in matches_by_line.items():
-        for m in matches:
-            if m.get("name") in active_names:
-                covered += count_significant_chars(m.get("match", ""))
     return covered / total * 100

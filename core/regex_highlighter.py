@@ -1,11 +1,19 @@
 import re
 import tkinter as tk
-from typing import List, Dict
+from typing import List, Dict, Tuple
 from utils.color_utils import get_shaded_color
 
 
 def compute_optimal_matches(line: str, patterns: List[Dict]) -> List[Dict]:
-    matches = []
+    """Find optimal non-overlapping matches.
+
+    User patterns are allowed to overlap with each other, but they will still
+    be excluded by built-in patterns according to priority. This behaviour
+    ensures user-defined patterns for the current log can be shown even if
+    they intersect one another.
+    """
+
+    all_matches = []
     for pat in patterns:
         regex = pat.get("regex") or pat.get("pattern")
         try:
@@ -13,7 +21,7 @@ def compute_optimal_matches(line: str, patterns: List[Dict]) -> List[Dict]:
         except re.error:
             continue
         for m in compiled.finditer(line):
-            matches.append({
+            all_matches.append({
                 "start": m.start(),
                 "end": m.end(),
                 "length": m.end() - m.start(),
@@ -25,19 +33,23 @@ def compute_optimal_matches(line: str, patterns: List[Dict]) -> List[Dict]:
                 "priority": pat.get("priority", 1),
             })
 
-    matches.sort(key=lambda m: m["end"])
-    n = len(matches)
+    # разделяем на обычные и разрешённые к перекрытию (пользовательские)
+    overlap_allowed = [m for m in all_matches if m.get("source") == "user"]
+    base_matches = [m for m in all_matches if m.get("source") != "user"]
+
+    base_matches.sort(key=lambda m: m["end"])
+    n = len(base_matches)
     dp = [0] * n
     prev = [-1] * n
 
-    def find_last_non_conflicting(i):
+    def find_last_non_conflicting(i: int) -> int:
         for j in range(i - 1, -1, -1):
-            if matches[j]["end"] <= matches[i]["start"]:
+            if base_matches[j]["end"] <= base_matches[i]["start"]:
                 return j
         return -1
 
     for i in range(n):
-        incl = matches[i]["priority"]
+        incl = base_matches[i]["priority"]
         j = find_last_non_conflicting(i)
         if j != -1:
             incl += dp[j]
@@ -47,18 +59,22 @@ def compute_optimal_matches(line: str, patterns: List[Dict]) -> List[Dict]:
             prev[i] = j
         else:
             dp[i] = excl
-            prev[i] = -2  # special marker: skip this match
+            prev[i] = -2  # skip this match
 
-    # Восстановление
     result = []
     i = n - 1
     while i >= 0:
         if prev[i] == -2:
             i -= 1
         else:
-            result.append(matches[i])
+            result.append(base_matches[i])
             i = prev[i]
-    return list(reversed(result))
+    result = list(reversed(result))
+
+    # добавляем пользовательские совпадения (они могут пересекаться друг с другом)
+    result.extend(overlap_allowed)
+    result.sort(key=lambda m: (m["start"], m["end"]))
+    return result
 
 
 def find_matches_in_line(line: str, patterns: List[Dict]) -> List[Dict]:
@@ -91,10 +107,9 @@ def apply_highlighting(
     total = len(pattern_keys) or 1
 
     for lineno, matches in matches_by_line.items():
-        for m in matches:
-            if m["name"] not in active_names:
-                continue
+        active_matches = [m for m in matches if m["name"] in active_names]
 
+        for m in active_matches:
             key = (m["category"], m["regex"])
             idx = pattern_index_map.get(key, 0)
             base_color = color_map.get(m["category"], "black")
@@ -107,3 +122,28 @@ def apply_highlighting(
             start_idx = f"{lineno}.{m['start']}"
             end_idx = f"{lineno}.{m['end']}"
             text_widget.tag_add(tag, start_idx, end_idx)
+
+        # выделим области перекрытия
+        ranges: List[Tuple[int, int]] = [(m["start"], m["end"]) for m in active_matches]
+        overlaps: List[Tuple[int, int]] = []
+        points = []
+        for s, e in ranges:
+            points.append((s, 1))
+            points.append((e, -1))
+        points.sort()
+        count = 0
+        overlap_start = None
+        for pos, delta in points:
+            prev = count
+            count += delta
+            if prev < 2 and count >= 2:
+                overlap_start = pos
+            elif prev >= 2 and count < 2 and overlap_start is not None:
+                overlaps.append((overlap_start, pos))
+                overlap_start = None
+
+        if "overlap" not in text_widget.tag_names():
+            text_widget.tag_config("overlap", underline=True)
+
+        for s, e in overlaps:
+            text_widget.tag_add("overlap", f"{lineno}.{s}", f"{lineno}.{e}")
