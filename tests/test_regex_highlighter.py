@@ -18,27 +18,27 @@ def test_compute_optimal_matches_priorities():
     assert names == ["p2", "p3"]
 
 
-def test_compute_optimal_matches_log_overlap():
+def test_compute_optimal_matches_user_overlap():
     line = "abc"
     patterns = [
-        {"name": "l1", "regex": "ab", "source": "log", "priority": 1},
-        {"name": "l2", "regex": "bc", "source": "log", "priority": 1},
+        {"name": "u1", "regex": "ab", "source": "user", "priority": 1},
+        {"name": "u2", "regex": "bc", "source": "user", "priority": 1},
     ]
     result = compute_optimal_matches(line, patterns)
     names = {m["name"] for m in result}
-    assert names == {"l1", "l2"}
+    assert names == {"u1", "u2"}
 
 
-def test_compute_optimal_matches_log_vs_builtin():
+def test_compute_optimal_matches_user_vs_builtin():
     line = "abcd"
     patterns = [
         {"name": "base", "regex": "ab", "source": "builtin", "priority": 1},
-        {"name": "l1", "regex": "abc", "source": "log", "priority": 2},
-        {"name": "l2", "regex": "cd", "source": "log", "priority": 3},
+        {"name": "u1", "regex": "abc", "source": "user", "priority": 2},
+        {"name": "u2", "regex": "cd", "source": "user", "priority": 3},
     ]
     result = compute_optimal_matches(line, patterns)
     names = {m["name"] for m in result}
-    assert names == {"base", "l2"}
+    assert names == {"base", "u2"}
 
 
 def test_compute_char_coverage_overlaps():

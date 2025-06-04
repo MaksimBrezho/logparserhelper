@@ -7,10 +7,10 @@ from utils.color_utils import get_shaded_color
 def compute_optimal_matches(line: str, patterns: List[Dict]) -> List[Dict]:
     """Find optimal non-overlapping matches.
 
-    User patterns from the current log (marked with ``source='log'``) may
-    overlap with each other, but they must not intersect with built-in or
-    global user patterns. Built-in and global patterns remain mutually
-    exclusive based on their priority.
+    Patterns marked with ``source='user'`` may overlap with each other, but
+    they must not intersect with built-in, per-log, or other pattern groups.
+    Built-in and other non-user patterns remain mutually exclusive based on
+    their priority.
     """
 
     all_matches = []
@@ -33,9 +33,9 @@ def compute_optimal_matches(line: str, patterns: List[Dict]) -> List[Dict]:
                 "priority": pat.get("priority", 1),
             })
 
-    # per-log паттерны могут перекрываться только между собой
-    log_allowed = [m for m in all_matches if m.get("source") == "log"]
-    base_matches = [m for m in all_matches if m.get("source") != "log"]
+    # паттерны пользователя могут перекрываться только между собой
+    user_allowed = [m for m in all_matches if m.get("source") == "user"]
+    base_matches = [m for m in all_matches if m.get("source") != "user"]
 
     base_matches.sort(key=lambda m: m["end"])
     n = len(base_matches)
@@ -71,13 +71,13 @@ def compute_optimal_matches(line: str, patterns: List[Dict]) -> List[Dict]:
             i = prev[i]
     result = list(reversed(result))
 
-    # добавляем лог‑специфичные совпадения, если они не пересекаются с базовыми
-    filtered_logs = []
-    for m in log_allowed:
+    # добавляем пользовательские совпадения, если они не пересекаются с базовыми
+    filtered_users = []
+    for m in user_allowed:
         if all(m["end"] <= b["start"] or m["start"] >= b["end"] for b in result):
-            filtered_logs.append(m)
+            filtered_users.append(m)
 
-    result.extend(filtered_logs)
+    result.extend(filtered_users)
     result.sort(key=lambda m: (m["start"], m["end"]))
     return result
 
