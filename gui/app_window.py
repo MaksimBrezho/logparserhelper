@@ -1,6 +1,10 @@
 import tkinter as tk
 from tkinter import filedialog, ttk, messagebox, simpledialog
-from utils.json_utils import load_all_patterns, load_cef_field_keys
+from utils.json_utils import (
+    load_all_patterns,
+    load_cef_field_keys,
+    get_log_name_for_file,
+)
 from core.regex_highlighter import find_matches_in_line, apply_highlighting
 from gui.pattern_panel import PatternPanel
 from utils.color_utils import generate_distinct_colors
@@ -209,8 +213,8 @@ class AppWindow(tk.Frame):
         cef_fields = getattr(self.pattern_panel, "cef_fields", [])
         source_file = getattr(self, "source_path", "example.log")
 
-        # Имя набора паттернов
-        default_name = os.path.basename(source_file)
+        # Имя набора паттернов по умолчанию
+        default_name = get_log_name_for_file(source_file) or os.path.basename(source_file)
         log_name = simpledialog.askstring(
             "Имя набора", "Введите имя для пер-лог паттернов:",
             initialvalue=default_name,

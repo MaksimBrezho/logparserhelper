@@ -49,6 +49,32 @@ def save_user_pattern(new_pattern):
 
     save_user_patterns(user_patterns)
 
+
+def get_log_name_for_file(source_file):
+    """Return previously used log_name for the given log file path.
+
+    Parameters
+    ----------
+    source_file : str
+        Absolute path of the log file.
+
+    Returns
+    -------
+    str | None
+        The log_name if the log file was already stored, otherwise ``None``.
+    """
+    try:
+        if not os.path.exists(PER_LOG_PATTERNS_PATH):
+            return None
+        with open(PER_LOG_PATTERNS_PATH, "r", encoding="utf-8") as f:
+            all_data = json.load(f)
+        for log_name, entry in all_data.items():
+            if entry.get("file") == source_file:
+                return log_name
+    except (FileNotFoundError, json.JSONDecodeError):
+        pass
+    return None
+
 def save_per_log_pattern(source_file, pattern_name, pattern_data, log_name=None):
     """Сохраняет паттерн, привязанный к конкретному логу.
 
