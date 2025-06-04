@@ -162,4 +162,7 @@ def apply_highlighting(
     for tag in sorted(tag_order, key=tag_order.get):
         text_widget.tag_raise(tag)
 
+    if "overlap" in text_widget.tag_names():
+        text_widget.tag_raise("overlap")
+
     return tag_order
