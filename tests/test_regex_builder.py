@@ -60,4 +60,5 @@ def test_regex_window_lookaround():
     )
     assert regex.startswith('(?<=') and '(?=' in regex
     match = re.search(regex, 'prefix start val=1 end suffix')
+    print(match)
     assert match

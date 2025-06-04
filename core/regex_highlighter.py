@@ -1,115 +1,109 @@
 import re
-from typing import List, Literal
-from regex.enum_generator import EnumRegexGenerator
-from regex.generalizer import generalize_token
-from core.tokenizer.tree_tokenizer import build_token_tree, flatten_token_tree
+import tkinter as tk
+from typing import List, Dict
+from utils.color_utils import get_shaded_color
 
-KEY_VALUE_SEPARATORS = {'=', ':', '->', '=>', '<-'}
 
-DigitMode = Literal["standard", "always_fixed_length", "always_plus", "min_length", "fixed_and_min"]
+def compute_optimal_matches(line: str, patterns: List[Dict]) -> List[Dict]:
+    matches = []
+    for pat in patterns:
+        regex = pat.get("regex") or pat.get("pattern")
+        try:
+            compiled = re.compile(regex)
+        except re.error:
+            continue
+        for m in compiled.finditer(line):
+            matches.append({
+                "start": m.start(),
+                "end": m.end(),
+                "length": m.end() - m.start(),
+                "match": m.group(),
+                "category": pat.get("category", "Unknown"),
+                "name": pat.get("name", "Unnamed"),
+                "source": pat.get("source", "unknown"),
+                "regex": regex,
+                "priority": pat.get("priority", 1),
+            })
 
-def build_draft_regex_from_examples(lines: List[str], *,
-                                     digit_mode: DigitMode = "standard",
-                                     digit_min_length: int = 1,
-                                     case_insensitive: bool = False) -> str:
-    token_columns = []
-    sep_columns = []
+    matches.sort(key=lambda m: m["end"])
+    n = len(matches)
+    dp = [0] * n
+    prev = [-1] * n
 
-    for line in lines:
-        tree = build_token_tree(line.strip())
-        pairs = flatten_token_tree(tree)
+    def find_last_non_conflicting(i):
+        for j in range(i - 1, -1, -1):
+            if matches[j]["end"] <= matches[i]["start"]:
+                return j
+        return -1
 
-        tokens = [val for val, kind in pairs if kind == 'token']
-        seps = [val for val, kind in pairs if kind == 'sep']
+    for i in range(n):
+        incl = matches[i]["priority"]
+        j = find_last_non_conflicting(i)
+        if j != -1:
+            incl += dp[j]
+        excl = dp[i - 1] if i > 0 else 0
+        if incl > excl:
+            dp[i] = incl
+            prev[i] = j
+        else:
+            dp[i] = excl
+            prev[i] = -2  # special marker: skip this match
 
-        if not token_columns:
-            token_columns = [[] for _ in tokens]
-            sep_columns = [[] for _ in seps]
+    # Восстановление
+    result = []
+    i = n - 1
+    while i >= 0:
+        if prev[i] == -2:
+            i -= 1
+        else:
+            result.append(matches[i])
+            i = prev[i]
+    return list(reversed(result))
 
-        for i, token in enumerate(tokens):
-            token_columns[i].append(token)
-        for i, sep in enumerate(seps):
-            sep_columns[i].append(sep)
 
-    def digit_pattern(values: List[str]) -> str:
-        lengths = [len(v) for v in values]
-        min_len, max_len = min(lengths), max(lengths)
-        unique_vals = set(values)
+def find_matches_in_line(line: str, patterns: List[Dict]) -> List[Dict]:
+    return compute_optimal_matches(line, patterns)
 
-        if digit_mode == "always_plus":
-            return r"\d+"
-        elif digit_mode == "always_fixed_length":
-            if min_len == max_len:
-                return rf"\d{{{min_len}}}"
-            else:
-                return rf"\d{{{min_len},{max_len}}}" if max_len <= 5 else r"\d+"
-        elif digit_mode == "fixed_and_min":
-            if min_len == max_len and len(unique_vals) > 1:
-                return rf"\d{{{min_len}}}"
-            else:
-                lower = max(digit_min_length, min_len)
-                return rf"\d{{{lower},{max_len}}}"
-        elif digit_mode == "min_length":
-            return rf"\d{{{digit_min_length},{max_len}}}" if digit_min_length != max_len else rf"\d{{{digit_min_length}}}"
-        else:  # "standard"
-            if min_len == max_len:
-                return rf"\d{{{min_len}}}" if len(unique_vals) > 1 else re.escape(values[0])
-            elif max_len <= 5:
-                return rf"\d{{{min_len},{max_len}}}"
-            else:
-                return r"\d+"
 
-    token_patterns = []
-    i = 0
-    token_len = len(token_columns)
-    sep_len = len(sep_columns)
-    sep_i = 0
+def apply_highlighting(
+    text_widget,
+    matches_by_line: Dict[int, List[Dict]],
+    active_names: set,
+    color_map: Dict[str, str]
+):
+    for tag in text_widget.tag_names():
+        text_widget.tag_remove(tag, "1.0", tk.END)
+        try:
+            text_widget.tag_delete(tag)
+        except tk.TclError:
+            pass
 
-    while i < token_len:
-        if i + 1 < token_len and sep_i < sep_len:
-            sep = sep_columns[sep_i][0]
-            if sep == ':' and not all(': ' in line or ':,' in line for line in lines):
-                sep = None
+    pattern_keys = []
+    seen = set()
+    for matches in matches_by_line.values():
+        for m in matches:
+            key = (m["category"], m["regex"])
+            if key not in seen:
+                pattern_keys.append(key)
+                seen.add(key)
 
-            if sep in KEY_VALUE_SEPARATORS:
-                keys = token_columns[i]
-                values = token_columns[i + 1]
+    pattern_index_map = {key: i for i, key in enumerate(pattern_keys)}
+    total = len(pattern_keys) or 1
 
-                key_pattern = re.escape(keys[0]) if len(set(keys)) == 1 else generalize_token(keys[0])
-
-                if all(re.fullmatch(r'\d+', tok) for tok in values):
-                    value_pattern = digit_pattern(values)
-                elif len(set(values)) == 1:
-                    value_pattern = re.escape(values[0])
-                elif all(re.fullmatch(r'[A-Z]+', t) for t in values):
-                    value_pattern = EnumRegexGenerator(values, ignore_case=case_insensitive, sort_by_length=True).generate()
-                else:
-                    value_pattern = generalize_token(values[0])
-
-                token_patterns.append(f"{key_pattern}{re.escape(sep)}{value_pattern}")
-                i += 2
-                sep_i += 1
-                if sep_i < sep_len:
-                    token_patterns.append(re.escape(sep_columns[sep_i][0]))
-                    sep_i += 1
+    for lineno, matches in matches_by_line.items():
+        for m in matches:
+            if m["name"] not in active_names:
                 continue
 
-        col = token_columns[i]
-        if all(re.fullmatch(r'\d+', tok) for tok in col):
-            pattern = digit_pattern(col)
-        elif len(set(col)) == 1:
-            pattern = re.escape(col[0])
-        elif all(re.fullmatch(r'[A-Z]+', t) for t in col):
-            pattern = EnumRegexGenerator(col, ignore_case=case_insensitive, sort_by_length=True).generate()
-        else:
-            pattern = generalize_token(col[0])
+            key = (m["category"], m["regex"])
+            idx = pattern_index_map.get(key, 0)
+            base_color = color_map.get(m["category"], "black")
+            shaded = get_shaded_color(base_color, idx, total)
 
-        token_patterns.append(pattern)
+            tag = f"{m['category']}_{m['regex']}"
+            if tag not in text_widget.tag_names():
+                text_widget.tag_config(tag, background=shaded)
 
-        if sep_i < sep_len:
-            token_patterns.append(re.escape(sep_columns[sep_i][0]))
-            sep_i += 1
-
-        i += 1
-
-    return ''.join(token_patterns)
+            start_idx = f"{lineno}.{m['start']}"
+            end_idx = f"{lineno}.{m['end']}"
+            text_widget.tag_add(tag, start_idx, end_idx)
