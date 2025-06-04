@@ -1,7 +1,7 @@
 import re
 from typing import List, Literal
-from regex.enum_generator import EnumRegexGenerator
-from regex.generalizer import generalize_token
+from .enum_generator import EnumRegexGenerator
+from .generalizer import generalize_token
 from core.tokenizer.tree_tokenizer import build_token_tree, flatten_token_tree
 
 KEY_VALUE_SEPARATORS = {'=', ':', '->', '=>', '<-'}
@@ -39,21 +39,19 @@ def build_draft_regex_from_examples(lines: List[str], *,
         if digit_mode == "always_plus":
             return r"\d+"
         elif digit_mode == "always_fixed_length":
-            if min_len == max_len:
-                return rf"\d{{{min_len}}}"
-            else:
-                return rf"\d{{{min_len},{max_len}}}" if max_len <= 5 else r"\d+"
+            return rf"\d{{{len(values[0])}}}"
         elif digit_mode == "fixed_and_min":
-            if min_len == max_len and len(unique_vals) > 1:
-                return rf"\d{{{min_len}}}"
+            if len(unique_vals) == 1:
+                return rf"\d{{{len(values[0])}}}"  # точно фиксированное
             else:
-                lower = max(digit_min_length, min_len)
-                return rf"\d{{{lower},{max_len}}}"
+                return rf"\d{{{digit_min_length},{max_len}}}"  # fallback
         elif digit_mode == "min_length":
             return rf"\d{{{digit_min_length},{max_len}}}" if digit_min_length != max_len else rf"\d{{{digit_min_length}}}"
         else:  # "standard"
-            if min_len == max_len:
-                return rf"\d{{{min_len}}}" if len(unique_vals) > 1 else re.escape(values[0])
+            if len(unique_vals) == 1:
+                return re.escape(values[0])
+            elif min_len == max_len:
+                return rf"\d{{{min_len}}}"
             elif max_len <= 5:
                 return rf"\d{{{min_len},{max_len}}}"
             else:
@@ -95,6 +93,7 @@ def build_draft_regex_from_examples(lines: List[str], *,
                 continue
 
         col = token_columns[i]
+
         if all(re.fullmatch(r'\d+', tok) for tok in col):
             pattern = digit_pattern(col)
         elif len(set(col)) == 1:

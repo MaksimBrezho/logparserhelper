@@ -1,222 +1,224 @@
 import tkinter as tk
-from tkinter import filedialog, messagebox
-from collections import defaultdict
-from gui.regex_editor import RegexEditor
-from core.regex_highlighter import highlight_dates_in_text, tag_to_label
-from utils.json_utils import load_patterns
+from tkinter import filedialog, ttk, messagebox
+from utils.json_utils import load_all_patterns
+from core.regex_highlighter import find_matches_in_line, apply_highlighting
+from gui.pattern_panel import PatternPanel
+from utils.color_utils import generate_distinct_colors
+from gui.tooltip import ToolTip
+from gui.pattern_wizard import PatternWizardDialog
+import re
+
 
 class AppWindow(tk.Frame):
     def __init__(self, master=None):
         super().__init__(master)
-        self.master = master
-        self.pack()
-
-        self.patterns = load_patterns()
-        self.log_lines = []
+        self.logs = []
+        self.page_size = 40
         self.current_page = 0
-        self.lines_per_page = 5
-        self.check_vars = defaultdict(list)
-        self.tooltip = None
+        self.patterns = []
+        self.tooltip = ToolTip(self)
+        self.pattern_panel = None
+        self.match_cache = {}  # lineno -> list of matches
 
-        self.matched_patterns = set()
+        self._setup_widgets()
+        self._load_patterns()
 
-        self.create_widgets()
+    def _setup_widgets(self):
+        self.grid_rowconfigure(0, weight=1)
+        self.grid_columnconfigure(0, weight=1)
 
-    def create_widgets(self):
-        btn_frame = tk.Frame(self)
-        btn_frame.pack(side="top", fill="x", padx=10, pady=5)
+        frame = tk.Frame(self)
+        frame.grid(row=0, column=0, sticky="nsew")
+        frame.grid_rowconfigure(0, weight=1)
+        frame.grid_columnconfigure(0, weight=1)
 
-        load_btn = tk.Button(btn_frame, text="Загрузить лог", command=self.load_log)
-        load_btn.pack(side="left", padx=5)
+        self.text_area = tk.Text(frame, wrap=tk.NONE)
+        self.text_area.grid(row=0, column=0, sticky="nsew")
 
-        edit_btn = tk.Button(btn_frame, text="Редактировать шаблоны", command=self.edit_patterns)
-        edit_btn.pack(side="left", padx=5)
+        y_scroll = tk.Scrollbar(frame, orient="vertical", command=self.text_area.yview)
+        y_scroll.grid(row=0, column=1, sticky="ns")
+        self.text_area.config(yscrollcommand=y_scroll.set)
 
-        paned = tk.PanedWindow(self, orient=tk.HORIZONTAL, sashrelief=tk.RAISED)
-        paned.pack(fill="both", expand=True)
+        x_scroll = tk.Scrollbar(frame, orient="horizontal", command=self.text_area.xview)
+        x_scroll.grid(row=1, column=0, sticky="ew")
+        self.text_area.config(xscrollcommand=x_scroll.set)
 
-        log_frame = tk.Frame(paned)
-        text_frame = tk.Frame(log_frame)
-        text_frame.pack(fill="both", expand=True)
+        self.pattern_panel = PatternPanel(
+            master=frame,
+            patterns=[],
+            on_toggle_callback=self.render_page,
+            width=200
+        )
+        self.pattern_panel.grid(row=0, column=2, sticky="ns", padx=5)
+        self.pattern_panel.grid_propagate(False)
 
-        self.text_area = tk.Text(text_frame, wrap="none", font=("Courier", 10))
-        self.text_area.pack(side="left", fill="both", expand=True)
+        ctrl = tk.Frame(self)
+        ctrl.grid(row=1, column=0, sticky="w", padx=5, pady=5)
 
-        y_scroll = tk.Scrollbar(text_frame, orient="vertical", command=self.text_area.yview)
-        y_scroll.pack(side="right", fill="y")
-        self.text_area.configure(yscrollcommand=y_scroll.set)
+        tk.Button(ctrl, text="Загрузить лог", command=self.load_log_file).pack(side="left", padx=5)
+        tk.Button(ctrl, text="← Назад", command=self.prev_page).pack(side="left", padx=5)
+        tk.Button(ctrl, text="Вперёд →", command=self.next_page).pack(side="left", padx=5)
 
-        x_scroll = tk.Scrollbar(log_frame, orient="horizontal", command=self.text_area.xview)
-        x_scroll.pack(side="bottom", fill="x")
-        self.text_area.configure(xscrollcommand=x_scroll.set)
+        tk.Label(ctrl, text="Строк на странице:").pack(side="left", padx=(20, 5))
 
-        paned.add(log_frame, stretch="always")
+        self.spinbox = tk.Spinbox(ctrl, from_=1, to=1000, width=5, command=self.update_page_size)
+        self.spinbox.pack(side="left")
+        self.spinbox.delete(0, tk.END)
+        self.spinbox.insert(0, str(self.page_size))
 
-        self.control_frame = tk.Frame(paned, width=250)
-        paned.add(self.control_frame)
+        self.status_label = tk.Label(ctrl, text="Стр. 0 из 0")
+        self.status_label.pack(side="left", padx=15)
+        tk.Button(ctrl, text="Создать паттерн", command=self.open_pattern_wizard).pack(side="left", padx=5)
+        self.text_area.bind("<Motion>", self.on_hover)
+        self.text_area.bind("<Leave>", lambda e: self.tooltip.hidetip())
 
-        nav_frame = tk.Frame(self)
-        nav_frame.pack(side="bottom", fill="x", pady=5)
+    def _load_patterns(self):
+        self.patterns = load_all_patterns()
 
-        self.prev_btn = tk.Button(nav_frame, text="← Назад", command=self.prev_page)
-        self.prev_btn.pack(side="left", padx=10)
-
-        self.next_btn = tk.Button(nav_frame, text="Вперед →", command=self.next_page)
-        self.next_btn.pack(side="left", padx=5)
-
-        self.page_label = tk.Label(nav_frame, text="")
-        self.page_label.pack(side="left", padx=10)
-
-        tk.Label(nav_frame, text="Строк на странице:").pack(side="left", padx=(20, 5))
-        self.page_size_spin = tk.Spinbox(nav_frame, from_=1, to=100, width=5, command=self.on_page_size_change)
-        self.page_size_spin.delete(0, tk.END)
-        self.page_size_spin.insert(0, str(self.lines_per_page))
-        self.page_size_spin.pack(side="left")
-
-        self.text_area.bind("<Motion>", self.on_mouse_move)
-        self.text_area.bind("<Leave>", self.hide_tooltip)
-
-    def load_log(self):
-        filepath = filedialog.askopenfilename(title="Выберите лог-файл", filetypes=[("Text files", "*.txt"), ("All files", "*.*")])
-        if not filepath:
+    def load_log_file(self):
+        path = filedialog.askopenfilename(filetypes=[("Log files", "*.log *.txt"), ("All files", "*.*")])
+        if not path:
             return
+        with open(path, "r", encoding="utf-8") as f:
+            self.logs = [line.rstrip() for line in f.readlines()]
+        self.current_page = 0
+        self._cache_matches()
+        self.render_page()
 
+    def _cache_matches(self):
+        self.match_cache = {}
+        active_patterns = [p for p in self.patterns if p.get("enabled", True)]
+
+        for i, line in enumerate(self.logs, start=1):
+            self.match_cache[i] = find_matches_in_line(line, active_patterns)
+
+    def render_page(self):
+        self.text_area.delete(1.0, tk.END)
+
+        start = self.current_page * self.page_size
+        end = start + self.page_size
+        visible_lines = self.logs[start:end]
+
+        for line in visible_lines:
+            self.text_area.insert(tk.END, line + "\n")
+
+        # Собираем все паттерны, у которых были совпадения
+        matched_names = set()
+        for matches in self.match_cache.values():
+            for m in matches:
+                matched_names.add(m["name"])
+
+        # visible_patterns = все найденные паттерны
+        visible_patterns = [p for p in self.patterns if p["name"] in matched_names]
+
+        # active_patterns = включённые пользователем
+        active_patterns = [p for p in visible_patterns if p.get("enabled", True)]
+        active_names = set(p["name"] for p in active_patterns)
+
+        # Формируем color_map по всем категориям
+        categories = sorted(set(p["category"] for p in visible_patterns))
+        color_map = {cat: color for cat, color in zip(categories, generate_distinct_colors(len(categories)))}
+
+        # Собираем matches для текущей страницы, но с относительной нумерацией
+        matches_to_show = {
+            rel_lineno: self.match_cache.get(abs_lineno, [])
+            for rel_lineno, abs_lineno in enumerate(range(start + 1, end + 1), start=1)
+        }
+
+        # Построим индекс оттенков: (category, regex) -> index
+        pattern_keys = []
+        seen = set()
+        for matches in self.match_cache.values():
+            for m in matches:
+                key = (m["category"], m["regex"])
+                if key not in seen:
+                    pattern_keys.append(key)
+                    seen.add(key)
+
+        pattern_index_map = {key: i for i, key in enumerate(pattern_keys)}
+
+        # Проверка на пересекающиеся паттерны
+        def has_overlap(matches: list[dict]) -> bool:
+            intervals = sorted((m["start"], m["end"]) for m in matches)
+            for i in range(1, len(intervals)):
+                if intervals[i][0] < intervals[i - 1][1]:
+                    return True
+            return False
+
+        for line_num, matches in matches_to_show.items():
+            if has_overlap(matches):
+                print(f"[WARNING] Overlapping patterns on line {line_num}:")
+                for m in matches:
+                    print(f"  - {m['start']}..{m['end']} → {m['name']} ({m['regex']})")
+
+        # Подсветка текста
+        apply_highlighting(self.text_area, matches_to_show, active_names, color_map)
+
+        # Обновление панели справа
+        self.pattern_panel.patterns = visible_patterns
+        self.pattern_panel.refresh(color_map=color_map, pattern_index_map=pattern_index_map)
+
+        self._update_status()
+
+    def update_page_size(self):
         try:
-            with open(filepath, "r", encoding="utf-8") as f:
-                self.log_lines = f.readlines()
-
-            for pat in self.patterns.get("date_patterns", []):
-                pat["enabled"] = True
-                pat["_matched"] = False
-
+            self.page_size = max(1, int(self.spinbox.get()))
             self.current_page = 0
-            self.update_log_view()
-
-        except Exception as e:
-            messagebox.showerror("Ошибка", f"Не удалось загрузить файл:\n{e}")
-
-    def build_highlight_controls(self):
-        for widget in self.control_frame.winfo_children():
-            widget.destroy()
-
-        self.check_vars.clear()
-        categories = defaultdict(list)
-
-        for i, pat in enumerate(self.patterns.get("date_patterns", [])):
-            # Отображаем только те, что хотя бы раз сработали
-            if not pat.get("_matched", False):
-                continue
-            category = pat.get("category", "Дата")
-            categories[category].append((i, pat))
-
-        for group, items in categories.items():
-            label = tk.Label(self.control_frame, text=group, font=("Arial", 10, "bold"))
-            label.pack(anchor="w", padx=10, pady=(10, 0))
-            for i, pat in items:
-                var = self.check_vars.get(i, tk.BooleanVar(value=pat.get("enabled", True)))
-                chk = tk.Checkbutton(
-                    self.control_frame,
-                    text=pat["name"],
-                    variable=var,
-                    command=self.apply_highlighting,
-                    anchor="w",
-                    justify="left"
-                )
-                chk.pack(fill="x", padx=20, pady=2)
-                self.check_vars[i] = var
-
-    def update_log_view(self):
-        self.text_area.delete("1.0", tk.END)
-
-        start = self.current_page * self.lines_per_page
-        end = start + self.lines_per_page
-        visible_lines = self.log_lines[start:end]
-
-        self.text_area.insert("1.0", "".join(visible_lines))
-        self.text_area.update_idletasks()
-        self.apply_highlighting()
-        self.update_nav_buttons()
-
-    def apply_highlighting(self):
-        # Обновляем включённость шаблонов из чекбоксов
-        for i, pat in enumerate(self.patterns.get("date_patterns", [])):
-            if i in self.check_vars:
-                pat["enabled"] = self.check_vars[i].get()
-
-        # Подсветка
-        matched_indexes = highlight_dates_in_text(self.text_area, self.patterns)
-
-        # Обновляем флаг "_matched": сохраняем True, если хотя бы раз сработал
-        for i, pat in enumerate(self.patterns.get("date_patterns", [])):
-            pat["_matched"] = pat.get("_matched", False) or (i in matched_indexes)
-
-        self.build_highlight_controls()
-
-    def update_nav_buttons(self):
-        self.prev_btn.config(state="normal" if self.current_page > 0 else "disabled")
-
-        max_page = len(self.log_lines) // self.lines_per_page
-        if self.current_page >= max_page or not self.log_lines[self.current_page * self.lines_per_page:]:
-            self.next_btn.config(state="disabled")
-        else:
-            self.next_btn.config(state="normal")
-
-        total_pages = max_page + (1 if len(self.log_lines) % self.lines_per_page else 0)
-        self.page_label.config(text=f"Стр. {self.current_page + 1} из {max(1, total_pages)}")
-
-    def on_page_size_change(self):
-        try:
-            new_size = int(self.page_size_spin.get())
-            if new_size > 0:
-                self.lines_per_page = new_size
-                self.current_page = 0
-                self.update_log_view()
+            self.render_page()
         except ValueError:
             pass
+
+    def _update_status(self):
+        total_pages = (len(self.logs) - 1) // self.page_size + 1 if self.logs else 0
+        self.status_label.config(text=f"Стр. {self.current_page + 1} из {total_pages}")
+
+    def next_page(self):
+        if (self.current_page + 1) * self.page_size < len(self.logs):
+            self.current_page += 1
+            self.render_page()
 
     def prev_page(self):
         if self.current_page > 0:
             self.current_page -= 1
-            self.update_log_view()
+            self.render_page()
 
-    def next_page(self):
-        max_page = len(self.log_lines) // self.lines_per_page
-        if self.current_page < max_page:
-            self.current_page += 1
-            self.update_log_view()
+    def on_hover(self, event):
+        try:
+            index = self.text_area.index(f"@{event.x},{event.y}")
+            tags = self.text_area.tag_names(index)
+            if tags:
+                tag = tags[0]
+                category, *_ = tag.split("_", 1)
+                self.tooltip.schedule(f"Категория: {category}", event.x_root, event.y_root)
+            else:
+                self.tooltip.unschedule()
+        except Exception:
+            self.tooltip.unschedule()
 
-    def edit_patterns(self):
-        def on_close():
-            self.patterns = load_patterns()
-            for pat in self.patterns.get("date_patterns", []):
-                pat["enabled"] = True
-                pat["_matched"] = False
-            self.update_log_view()
+    def open_pattern_wizard(self):
+        lines = self.get_selected_lines()
+        if not lines:
+            messagebox.showwarning("Нет выделения", "Пожалуйста, выделите строки для генерации паттерна.")
+            return
 
-        RegexEditor(self.master, on_close_callback=on_close)
+        # Получаем CEF-поля и путь к лог-файлу
+        cef_fields = getattr(self.pattern_panel, "cef_fields", [])
+        source_file = getattr(self, "source_path", "example.log")
 
-    def on_mouse_move(self, event):
-        index = self.text_area.index(f"@{event.x},{event.y}")
-        tags = self.text_area.tag_names(index)
+        try:
+            PatternWizardDialog(
+                parent=self,
+                selected_lines=lines,
+                cef_fields=cef_fields,
+                source_file=source_file
+            )
+        except Exception as e:
+            print(f"[Ошибка PatternWizard] {e}")
+            messagebox.showerror("Ошибка", f"Не удалось открыть мастер: {e}")
 
-        for tag in tags:
-            if tag in tag_to_label:
-                self.show_tooltip(event.x_root, event.y_root, tag_to_label[tag])
-                return
-        self.hide_tooltip()
-
-    def show_tooltip(self, x, y, text):
-        if self.tooltip:
-            self.tooltip.destroy()
-
-        self.tooltip = tk.Toplevel(self)
-        self.tooltip.wm_overrideredirect(True)
-        self.tooltip.wm_geometry(f"+{x+15}+{y+10}")
-
-        label = tk.Label(self.tooltip, text=text, background="#ffffe0", relief="solid", borderwidth=1, font=("Arial", 9))
-        label.pack()
-
-    def hide_tooltip(self, event=None):
-        if self.tooltip:
-            self.tooltip.destroy()
-            self.tooltip = None
+    def get_selected_lines(self):
+        try:
+            selection = self.text_area.get(tk.SEL_FIRST, tk.SEL_LAST)
+            return [line for line in selection.splitlines() if line.strip()]
+        except tk.TclError:
+            return []
