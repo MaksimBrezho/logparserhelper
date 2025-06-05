@@ -32,6 +32,7 @@ class AppWindow(tk.Frame):
         self.tooltip = ToolTip(self)
         self.pattern_panel = None
         self.match_cache = {}  # lineno -> list of matches
+        self.tag_map = {}
         self.cef_fields = load_cef_fields()
 
         self._setup_widgets()
@@ -210,7 +211,7 @@ class AppWindow(tk.Frame):
                     )
 
         # Подсветка текста
-        apply_highlighting(self.text_area, matches_to_show, active_names, color_map)
+        apply_highlighting(self.text_area, matches_to_show, active_names, color_map, tag_map=self.tag_map)
 
         # Обновление панели справа
         self.pattern_panel.patterns = visible_patterns
@@ -244,10 +245,11 @@ class AppWindow(tk.Frame):
         try:
             index = self.text_area.index(f"@{event.x},{event.y}")
             tags = self.text_area.tag_names(index)
-            if tags:
-                tag = tags[0]
-                category, *_ = tag.split("_", 1)
-                self.tooltip.schedule(f"Категория: {category}", event.x_root, event.y_root)
+            names = [self.tag_map[t]["name"] for t in tags if t in self.tag_map]
+            if len(names) > 1:
+                self.tooltip.schedule(
+                    "Паттерны: " + ", ".join(names), event.x_root, event.y_root
+                )
             else:
                 self.tooltip.unschedule()
         except Exception:
