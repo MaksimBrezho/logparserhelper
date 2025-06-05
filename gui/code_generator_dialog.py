@@ -1,8 +1,9 @@
+
 import os
 import tkinter as tk
 from tkinter import ttk, messagebox, simpledialog
-
 from gui.transform_editor import TransformEditorDialog
+
 
 
 from utils import json_utils, code_generator
@@ -63,11 +64,11 @@ class CodeGeneratorDialog(tk.Toplevel):
         self.tree.pack(fill="both", expand=True)
         self.tree.bind("<Double-1>", self._on_edit)
 
+
         # sample initial rows
         self.tree.insert("", "end", values=("time", "ISODate", "none", ""))
         self.tree.insert("", "end", values=("user", "UserName", "none", ""))
         self.tree.insert("", "end", values=("msg", "Message", "none", ""))
-
         btns = ttk.Frame(self)
         btns.pack(fill="x", pady=5)
         ttk.Button(btns, text="+ Add Field", command=self._on_add_field).pack(side="left", padx=5)
@@ -136,6 +137,7 @@ class CodeGeneratorDialog(tk.Toplevel):
         except Exception as e:
             messagebox.showerror("Error", str(e))
 
+
     def _on_edit(self, event):
         item = self.tree.identify_row(event.y)
         if not item:
@@ -147,5 +149,3 @@ class CodeGeneratorDialog(tk.Toplevel):
         self.wait_window(dlg)
         if dlg.result is not None:
             self.tree.item(item, values=(cef_field, pattern, dlg.result, values[3]))
-
-
