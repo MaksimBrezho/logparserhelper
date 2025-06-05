@@ -166,7 +166,11 @@ class AppWindow(tk.Frame):
         active_names = set(p["name"] for p in active_patterns)
 
         # Формируем color_map по всем категориям
-        categories = sorted(set(p.get("category") for p in visible_patterns))
+        categories = sorted({
+            cat
+            for cat in (p.get("category") for p in visible_patterns)
+            if cat is not None
+        })
         color_map = {cat: color for cat, color in zip(categories, generate_distinct_colors(len(categories)))}
 
         # Собираем matches для текущей страницы, но с относительной нумерацией
