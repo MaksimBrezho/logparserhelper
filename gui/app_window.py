@@ -318,8 +318,7 @@ class AppWindow(tk.Frame):
                     key = simpledialog.askstring("Log Key", prompt, parent=self)
                     if key:
                         per_patterns = load_per_log_patterns_by_key(key)
-
-            dlg = CodeGeneratorDialog(self, per_log_patterns=per_patterns)
+            dlg = CodeGeneratorDialog(self, per_log_patterns=per_patterns, logs=self.logs)
             dlg.grab_set()
         except Exception as e:
             logger.error("[CodeGenerator] %s", e)
