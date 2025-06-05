@@ -22,6 +22,14 @@ def load_builtin_pattern_keys():
         return {}
 
 
+def load_builtin_pattern_keys():
+    try:
+        with open(BUILTIN_PATTERN_KEYS_PATH, "r", encoding="utf-8") as f:
+            return json.load(f)
+    except (FileNotFoundError, json.JSONDecodeError):
+        return {}
+
+
 def load_all_patterns():
     """Загружает объединённые пользовательские и встроенные шаблоны."""
 
