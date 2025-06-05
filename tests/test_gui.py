@@ -85,3 +85,36 @@ def test_appwindow_compute_coverage():
     }
     coverage = AppWindow._compute_coverage(app, {"p1", "p2"})
     assert round(coverage, 1) == round(11 / 17 * 100, 1)
+
+
+def test_cache_matches_respects_log_keys(monkeypatch):
+    app = AppWindow.__new__(AppWindow)
+    app.logs = ["Notification time out: 5"]
+    app.patterns = [
+        {
+            "name": "A",
+            "regex": "Notification time out",
+            "source": "user",
+            "log_keys": ["x"],
+            "enabled": True,
+            "priority": 1000,
+        },
+        {
+            "name": "B",
+            "regex": "Notification time out: \d+",
+            "source": "builtin",
+            "log_keys": ["x"],
+            "enabled": True,
+            "priority": 100,
+        },
+    ]
+    app.source_path = "/fake/path"
+
+    import gui.app_window as app_mod
+
+    monkeypatch.setattr(app_mod, "get_log_keys_for_file", lambda path: ["x"])
+
+    AppWindow._cache_matches(app)
+
+    names = {m["name"] for m in app.match_cache[1]}
+    assert names == {"A", "B"}
