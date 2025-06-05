@@ -8,20 +8,32 @@ from typing import List, Dict
 
 
 
-def compute_optimal_matches(line: str, patterns: List[Dict]) -> List[Dict]:
+def compute_optimal_matches(
+    line: str, patterns: List[Dict], log_keys: List[str] | None = None
+) -> List[Dict]:
     """Return list of pattern matches following priority rules."""
 
-    builtin = []
+    log_keys = set(log_keys or [])
+
+    keyed = []
     user = []
-    per_log = []
+    builtin = []
     for pat in patterns:
         src = pat.get("source")
+        p_keys = set(pat.get("log_keys") or [])
+        has_key = bool(p_keys & log_keys)
         if src in {"per_log", "log"}:
-            per_log.append(pat)
+            keyed.append(pat)
         elif src == "user":
-            user.append(pat)
+            if has_key:
+                keyed.append(pat)
+            else:
+                user.append(pat)
         else:
-            builtin.append(pat)
+            if has_key:
+                keyed.append(pat)
+            else:
+                builtin.append(pat)
 
 
     def _collect(pats, blocked=None):
@@ -105,10 +117,9 @@ def compute_optimal_matches(line: str, patterns: List[Dict]) -> List[Dict]:
                 i = prev[i]
         return list(reversed(result))
 
-    per_log_matches = _collect(per_log)
+    keyed_matches = _collect(keyed)
 
-    intervals = [(m["start"], m["end"]) for m in per_log_matches]
-
+    intervals = [(m["start"], m["end"]) for m in keyed_matches]
 
     user_raw = _collect(user, intervals)
     user_matches = _wis(user_raw)
@@ -117,7 +128,7 @@ def compute_optimal_matches(line: str, patterns: List[Dict]) -> List[Dict]:
     builtin_raw = _collect(builtin, intervals)
     builtin_matches = _wis(builtin_raw)
 
-    all_matches = per_log_matches + user_matches + builtin_matches
+    all_matches = keyed_matches + user_matches + builtin_matches
 
     all_matches.sort(key=lambda m: m["start"])
 
@@ -130,9 +141,11 @@ def compute_optimal_matches(line: str, patterns: List[Dict]) -> List[Dict]:
     return all_matches
 
 
-def find_matches_in_line(line: str, patterns: List[Dict]) -> List[Dict]:
+def find_matches_in_line(
+    line: str, patterns: List[Dict], log_keys: List[str] | None = None
+) -> List[Dict]:
     """Convenience wrapper around :func:`compute_optimal_matches`."""
-    return compute_optimal_matches(line, patterns)
+    return compute_optimal_matches(line, patterns, log_keys)
 
 
 def apply_highlighting(
