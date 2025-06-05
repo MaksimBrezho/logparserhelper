@@ -24,6 +24,7 @@ class CodeGeneratorDialog(tk.Toplevel):
         self.minsize(700, 500)
         self.per_log_patterns = per_log_patterns or []
         self.logs = logs or []
+        self.mappings = []
 
         self.mappings = self._build_initial_mappings()
         self._build_ui()
@@ -50,7 +51,6 @@ class CodeGeneratorDialog(tk.Toplevel):
         entry = ttk.Entry(header, textvariable=self.header_vars["CEF Version"], state="disabled")
         entry.grid(row=0, column=1, sticky="ew", pady=2, padx=2)
         header.grid_columnconfigure(1, weight=1)
-
         self.mapping_frame = ttk.LabelFrame(self, text="Fields Auto-Mapped from Regex Patterns")
         self.mapping_frame.pack(fill="both", expand=True, padx=10, pady=5)
         self.mapping_list = ttk.Frame(self.mapping_frame)
@@ -61,6 +61,8 @@ class CodeGeneratorDialog(tk.Toplevel):
         ttk.Button(btns, text="+ Add Field", command=self._on_add_field).pack(side="left", padx=5)
         ttk.Button(btns, text="Preview Code ▸", command=self._on_preview).pack(side="right", padx=5)
         ttk.Button(btns, text="Generate Python", command=self._on_generate).pack(side="right", padx=5)
+        for key in self.MANDATORY_FIELDS:
+            self.mappings.append({"cef": key, "pattern": "", "transform": "none"})
 
         self._refresh_mapping_list()
 
@@ -209,7 +211,6 @@ class CodeGeneratorDialog(tk.Toplevel):
 
         pattern_map = {p["name"]: p for p in self._collect_patterns()}
         all_names = list(pattern_map.keys())
-
         counts = {}
         for m in self.mappings:
             counts[m["cef"]] = counts.get(m["cef"], 0) + 1
@@ -232,4 +233,5 @@ class CodeGeneratorDialog(tk.Toplevel):
             ttk.Label(self.mapping_list, text=example).grid(row=idx, column=4, sticky="w", padx=2)
 
         self.mapping_list.grid_columnconfigure(1, weight=1)
+
 
