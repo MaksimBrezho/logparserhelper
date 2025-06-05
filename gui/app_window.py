@@ -113,6 +113,7 @@ class AppWindow(tk.Frame):
         if getattr(self, "source_path", None):
             per_log_patterns = load_per_log_patterns_for_file(self.source_path)
             log_keys = get_log_keys_for_file(self.source_path)
+        self.per_log_patterns = per_log_patterns
 
         # merge per-log and global patterns by name, prefer per-log
         pattern_map = {}
@@ -157,6 +158,7 @@ class AppWindow(tk.Frame):
             if name not in unique or p.get("source") == "per_log":
                 unique[name] = p
         visible_patterns = [p for n, p in unique.items() if n in matched_names]
+
 
         # active_patterns = включённые пользователем
         active_patterns = [p for p in visible_patterns if p.get("enabled", True)]
