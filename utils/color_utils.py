@@ -1,8 +1,15 @@
 from colorsys import rgb_to_hls, hls_to_rgb
-import matplotlib.colors as mcolors
+
+try:
+    import matplotlib.colors as mcolors
+except Exception:  # pragma: no cover - optional dependency
+    mcolors = None
 
 def hex_to_rgb(hex_color):
-    return mcolors.to_rgb(hex_color)
+    if mcolors:
+        return mcolors.to_rgb(hex_color)
+    hex_color = hex_color.lstrip('#')
+    return tuple(int(hex_color[i:i+2], 16)/255 for i in (0, 2, 4))
 
 def rgb_to_hex(rgb_tuple):
     return '#{:02x}{:02x}{:02x}'.format(
