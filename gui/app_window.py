@@ -4,6 +4,8 @@ from utils.json_utils import (
     load_all_patterns,
     load_cef_fields,
     get_log_name_for_file,
+    get_log_keys_for_file,
+    load_per_log_patterns_for_file,
     save_per_log_pattern,
 )
 from core.regex_highlighter import find_matches_in_line, apply_highlighting
@@ -105,8 +107,16 @@ class AppWindow(tk.Frame):
         self.match_cache = {}
         active_patterns = [p for p in self.patterns if p.get("enabled", True)]
 
+        per_log_patterns = []
+        log_keys = []
+        if getattr(self, "source_path", None):
+            per_log_patterns = load_per_log_patterns_for_file(self.source_path)
+            log_keys = get_log_keys_for_file(self.source_path)
+
+        all_patterns = per_log_patterns + active_patterns
+
         for i, line in enumerate(self.logs, start=1):
-            self.match_cache[i] = find_matches_in_line(line, active_patterns)
+            self.match_cache[i] = find_matches_in_line(line, all_patterns, log_keys)
 
     def _compute_coverage(self, active_names) -> float:
         if not self.logs:

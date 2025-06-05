@@ -9,12 +9,23 @@ USER_DATA_DIR = os.path.join("data", "user")
 
 USER_PATTERNS_PATH = os.path.join(USER_DATA_DIR, "patterns_user.json")
 BUILTIN_PATTERNS_PATH = os.path.join("data", "patterns_builtin.json")
-PER_LOG_PATTERNS_PATH = os.path.join(USER_DATA_DIR, "per_log_patterns.json")
+LOG_KEY_MAP_PATH = os.path.join("data", "log_key_map.json")
+BUILTIN_PATTERN_KEYS_PATH = os.path.join("data", "builtin_pattern_keys.json")
 CEF_FIELDS_PATH = os.path.join("data", "cef_fields.json")
+PER_LOG_PATTERNS_PATH = os.path.join(USER_DATA_DIR, "per_log_patterns.json")
+
+def load_builtin_pattern_keys():
+    try:
+        with open(BUILTIN_PATTERN_KEYS_PATH, "r", encoding="utf-8") as f:
+            return json.load(f)
+    except (FileNotFoundError, json.JSONDecodeError):
+        return {}
+
 
 def load_all_patterns():
     """Загружает объединённые пользовательские и встроенные шаблоны."""
-    patterns = []
+
+    builtin_keys = load_builtin_pattern_keys()
 
     def _read(path, is_builtin=False):
         try:
@@ -25,11 +36,39 @@ def load_all_patterns():
                     if "regex" not in p and "pattern" in p:
                         p["regex"] = p.pop("pattern")
                     p["source"] = "builtin" if is_builtin else "user"
+                    if is_builtin:
+                        p["log_keys"] = builtin_keys.get(p.get("name"), [])
                 return data
         except (FileNotFoundError, json.JSONDecodeError):
             return []
 
     return _read(USER_PATTERNS_PATH) + _read(BUILTIN_PATTERNS_PATH, is_builtin=True)
+
+
+def load_per_log_patterns_for_file(source_file: str) -> list[dict]:
+    """Return patterns tied to the given log file."""
+
+    try:
+        with open(PER_LOG_PATTERNS_PATH, "r", encoding="utf-8") as f:
+            data = json.load(f)
+    except (FileNotFoundError, json.JSONDecodeError):
+        return []
+
+    result = []
+    for name, entry in data.items():
+        file_path = entry.get("file")
+        if file_path == source_file or os.path.basename(file_path) == os.path.basename(source_file):
+            patterns = entry.get("patterns", {})
+            for pat_name, pat in patterns.items():
+                pat = pat.copy()
+                if "regex" not in pat and "pattern" in pat:
+                    pat["regex"] = pat.pop("pattern")
+                pat.setdefault("name", pat_name)
+                pat.setdefault("enabled", True)
+                pat["source"] = "per_log"
+                result.append(pat)
+            break
+    return result
 
 
 def save_user_patterns(patterns):
@@ -53,69 +92,53 @@ def save_user_pattern(new_pattern):
     save_user_patterns(user_patterns)
 
 
-def get_log_name_for_file(source_file):
-    """Return previously used log_name for the given log file path.
-
-    Parameters
-    ----------
-    source_file : str
-        Absolute path of the log file.
-
-    Returns
-    -------
-    str | None
-        The log_name if the log file was already stored, otherwise ``None``.
-    """
+def load_log_key_map():
     try:
-        if not os.path.exists(PER_LOG_PATTERNS_PATH):
-            return None
-        with open(PER_LOG_PATTERNS_PATH, "r", encoding="utf-8") as f:
-            all_data = json.load(f)
-        for log_name, entry in all_data.items():
-            if entry.get("file") == source_file:
-                return log_name
+        with open(LOG_KEY_MAP_PATH, "r", encoding="utf-8") as f:
+            return json.load(f)
     except (FileNotFoundError, json.JSONDecodeError):
-        pass
+        return {}
+
+
+def save_log_key_mapping(source_file, keys, log_name=None):
+    """Сохраняет сопоставление между лог-файлом и ключами."""
+
+    log_key = log_name if log_name else os.path.basename(source_file)
+    data = load_log_key_map()
+    data[log_key] = {"file": source_file, "keys": list(keys)}
+
+    try:
+        os.makedirs(os.path.dirname(LOG_KEY_MAP_PATH), exist_ok=True)
+        with open(LOG_KEY_MAP_PATH, "w", encoding="utf-8") as f:
+            json.dump(data, f, indent=4, ensure_ascii=False)
+    except Exception as e:
+        logger.error("[Ошибка сохранения сопоставления лог-ключей] %s", e)
+
+
+def get_log_keys_for_file(source_file):
+    """Возвращает список ключей, связанных с файлом лога."""
+
+    data = load_log_key_map()
+    base = os.path.basename(source_file)
+    for name, entry in data.items():
+        if entry.get("file") == source_file or name == base:
+            return entry.get("keys", [])
+    return []
+
+
+def get_log_name_for_file(source_file):
+    """Совместимая обёртка, возвращающая имя (ключ) для файла."""
+
+    data = load_log_key_map()
+    for name, entry in data.items():
+        if entry.get("file") == source_file:
+            return name
     return None
 
-def save_per_log_pattern(source_file, pattern_name, pattern_data, log_name=None):
-    """Сохраняет паттерн, привязанный к конкретному логу.
 
-    Parameters
-    ----------
-    source_file : str
-        Полный путь к файлу лога.
-    pattern_name : str
-        Имя сохраняемого паттерна.
-    pattern_data : dict
-        Данные паттерна.
-    log_name : str | None
-        Пользовательское имя для набора паттернов. Если не задано,
-        используется имя файла лога.
-    """
-    try:
-        log_key = log_name if log_name else os.path.basename(source_file)
-
-        if os.path.exists(PER_LOG_PATTERNS_PATH):
-            with open(PER_LOG_PATTERNS_PATH, "r", encoding="utf-8") as f:
-                all_data = json.load(f)
-        else:
-            all_data = {}
-
-        entry = all_data.get(log_key, {"file": source_file, "patterns": {}})
-        entry["file"] = source_file
-        entry["patterns"][pattern_name] = {
-            "regex": pattern_data["regex"],
-            "fields": pattern_data.get("fields", []),
-            "cef_field": pattern_data.get("cef_field"),
-        }
-        all_data[log_key] = entry
-
-        os.makedirs(os.path.dirname(PER_LOG_PATTERNS_PATH), exist_ok=True)
-        with open(PER_LOG_PATTERNS_PATH, "w", encoding="utf-8") as f:
-            json.dump(all_data, f, indent=4, ensure_ascii=False)
-    except Exception as e:
-        logger.error("[Ошибка сохранения пер-лог паттерна] %s", e)
+def save_per_log_pattern(*args, **kwargs):
+    """Устаревшая совместимая функция."""
+    logger.warning("save_per_log_pattern is deprecated")
 
 
 def load_cef_fields():
