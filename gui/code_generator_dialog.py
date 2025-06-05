@@ -46,6 +46,7 @@ class CodeGeneratorDialog(tk.Toplevel):
             if label == "CEF Version":
                 entry.config(state="disabled")
             entry.grid(row=i, column=1, sticky="ew", pady=2, padx=2)
+
             self.header_vars[label] = var
         header.grid_columnconfigure(1, weight=1)
 
@@ -63,6 +64,7 @@ class CodeGeneratorDialog(tk.Toplevel):
         self.tree.insert("", "end", values=("time", "ISODate", "[Edit]", "2024-06.."))
         self.tree.insert("", "end", values=("user", "UserName", "[Edit]", "max"))
         self.tree.insert("", "end", values=("msg", "Message", "[Edit]", "login fail"))
+
 
         btns = ttk.Frame(self)
         btns.pack(fill="x", pady=5)
