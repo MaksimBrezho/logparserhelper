@@ -31,7 +31,7 @@ class CodeGeneratorDialog(tk.Toplevel):
 
         self.header_vars = {}
         fields = [
-            ("CEF Version", "0.1"),
+            ("CEF Version", "0"),
             ("Device Vendor", "ACME"),
             ("Device Product", "LogParserPro"),
             ("Device Version", "1.0.0"),
@@ -42,7 +42,11 @@ class CodeGeneratorDialog(tk.Toplevel):
         for i, (label, default) in enumerate(fields):
             ttk.Label(header, text=f"{label}:").grid(row=i, column=0, sticky="w", pady=2, padx=2)
             var = tk.StringVar(value=default)
-            ttk.Entry(header, textvariable=var).grid(row=i, column=1, sticky="ew", pady=2, padx=2)
+            entry = ttk.Entry(header, textvariable=var)
+            if label == "CEF Version":
+                entry.config(state="disabled")
+            entry.grid(row=i, column=1, sticky="ew", pady=2, padx=2)
+
             self.header_vars[label] = var
         header.grid_columnconfigure(1, weight=1)
 
@@ -52,13 +56,15 @@ class CodeGeneratorDialog(tk.Toplevel):
         columns = ("cef_field", "source", "transform", "preview")
         self.tree = ttk.Treeview(fields_frame, columns=columns, show="headings", height=5)
         for col in columns:
-            self.tree.heading(col, text=col.title())
+            heading = "CEF Fields" if col == "cef_field" else col.title()
+            self.tree.heading(col, text=heading)
         self.tree.pack(fill="both", expand=True)
         self.tree.bind("<Double-1>", self._on_edit)
 
-        self.tree.insert("", "end", values=("cef_time", "ISODate", "[Edit]", "2024-06.."))
-        self.tree.insert("", "end", values=("cef_user", "UserName", "[Edit]", "max"))
-        self.tree.insert("", "end", values=("cef_msg", "Message", "[Edit]", "login fail"))
+        self.tree.insert("", "end", values=("time", "ISODate", "[Edit]", "2024-06.."))
+        self.tree.insert("", "end", values=("user", "UserName", "[Edit]", "max"))
+        self.tree.insert("", "end", values=("msg", "Message", "[Edit]", "login fail"))
+
 
         btns = ttk.Frame(self)
         btns.pack(fill="x", pady=5)
