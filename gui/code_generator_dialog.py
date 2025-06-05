@@ -1,12 +1,16 @@
-import tkinter as tk
-from tkinter import ttk
-from tkinter import messagebox
 
+import os
+import tkinter as tk
+from tkinter import ttk, messagebox, simpledialog
 from gui.transform_editor import TransformEditorDialog
 
 
+
+from utils import json_utils, code_generator
+
+
 class CodeGeneratorDialog(tk.Toplevel):
-    """Placeholder dialog for future code generation features."""
+    """Dialog for configuring and generating CEF converter code."""
 
     def __init__(self, parent, per_log_patterns=None):
         super().__init__(parent)
@@ -46,7 +50,6 @@ class CodeGeneratorDialog(tk.Toplevel):
             if label == "CEF Version":
                 entry.config(state="disabled")
             entry.grid(row=i, column=1, sticky="ew", pady=2, padx=2)
-
             self.header_vars[label] = var
         header.grid_columnconfigure(1, weight=1)
 
@@ -61,31 +64,88 @@ class CodeGeneratorDialog(tk.Toplevel):
         self.tree.pack(fill="both", expand=True)
         self.tree.bind("<Double-1>", self._on_edit)
 
-        self.tree.insert("", "end", values=("time", "ISODate", "[Edit]", "2024-06.."))
-        self.tree.insert("", "end", values=("user", "UserName", "[Edit]", "max"))
-        self.tree.insert("", "end", values=("msg", "Message", "[Edit]", "login fail"))
 
-
+        # sample initial rows
+        self.tree.insert("", "end", values=("time", "ISODate", "none", ""))
+        self.tree.insert("", "end", values=("user", "UserName", "none", ""))
+        self.tree.insert("", "end", values=("msg", "Message", "none", ""))
         btns = ttk.Frame(self)
         btns.pack(fill="x", pady=5)
         ttk.Button(btns, text="+ Add Field", command=self._on_add_field).pack(side="left", padx=5)
         ttk.Button(btns, text="Preview Code ▸", command=self._on_preview).pack(side="right", padx=5)
         ttk.Button(btns, text="Generate Python", command=self._on_generate).pack(side="right", padx=5)
 
+    def _collect_patterns(self) -> list:
+        patterns = {p["name"]: p for p in json_utils.load_all_patterns()}
+        for p in self.per_log_patterns:
+            patterns[p.get("name")] = p
+        return [
+            {"name": name, "regex": pat.get("regex", pat.get("pattern", ""))}
+            for name, pat in patterns.items()
+        ]
+
+    def _row_to_mapping(self, item):
+        values = self.tree.item(item, "values")
+        return {
+            "cef": values[0],
+            "pattern": values[1],
+            "group": 0,
+            "transform": values[2] or "none",
+        }
+
     def _on_add_field(self):
-        messagebox.showinfo("Stub", "Add Field action")
+        cef_field = simpledialog.askstring("CEF Field", "Enter CEF field key")
+        if not cef_field:
+            return
+        pattern = simpledialog.askstring("Source Pattern", "Enter pattern name")
+        if not pattern:
+            return
+        self.tree.insert("", "end", values=(cef_field, pattern, "none", ""))
 
     def _on_preview(self):
-        messagebox.showinfo("Stub", "Preview Code action")
+        # generate code into a temporary directory and show the converter code
+        import tempfile, pathlib
+
+        header = {k: v.get() for k, v in self.header_vars.items()}
+        mappings = [self._row_to_mapping(item) for item in self.tree.get_children()]
+        patterns = self._collect_patterns()
+
+        tmp_dir = tempfile.mkdtemp()
+        paths = code_generator.generate_files(header, mappings, patterns, tmp_dir)
+        converter_path = pathlib.Path(paths[0])
+        try:
+            with open(converter_path, "r", encoding="utf-8") as f:
+                data = f.read()
+        except OSError as e:
+            messagebox.showerror("Error", str(e))
+            return
+
+        preview = tk.Toplevel(self)
+        preview.title("Generated cef_converter.py")
+        text = tk.Text(preview, wrap="none")
+        text.insert("1.0", data)
+        text.pack(fill="both", expand=True)
 
     def _on_generate(self):
-        messagebox.showinfo("Stub", "Generate Python action")
+        header = {k: v.get() for k, v in self.header_vars.items()}
+        mappings = [self._row_to_mapping(item) for item in self.tree.get_children()]
+        patterns = self._collect_patterns()
+        out_dir = os.path.join(os.getcwd(), "generated_cef")
+        try:
+            code_generator.generate_files(header, mappings, patterns, out_dir)
+            messagebox.showinfo("Success", f"Files written to {out_dir}")
+        except Exception as e:
+            messagebox.showerror("Error", str(e))
+
 
     def _on_edit(self, event):
         item = self.tree.identify_row(event.y)
         if not item:
             return
         values = self.tree.item(item, "values")
-        cef_field = values[0]
-        dlg = TransformEditorDialog(self, cef_field)
+        cef_field, pattern, transform = values[:3]
+        dlg = TransformEditorDialog(self, cef_field, current=transform)
         dlg.grab_set()
+        self.wait_window(dlg)
+        if dlg.result is not None:
+            self.tree.item(item, values=(cef_field, pattern, dlg.result, values[3]))
