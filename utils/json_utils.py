@@ -65,7 +65,7 @@ def load_per_log_patterns_for_file(source_file: str) -> list[dict]:
                     pat["regex"] = pat.pop("pattern")
                 pat.setdefault("name", pat_name)
                 pat.setdefault("enabled", True)
-                pat["source"] = "per_log"
+                pat.setdefault("source", "per_log")
                 result.append(pat)
             break
     return result
@@ -150,11 +150,11 @@ def save_per_log_pattern(source_file, pattern_name, pattern_data, log_name=None)
 
         entry = all_data.get(log_key, {"file": source_file, "patterns": {}})
         entry["file"] = source_file
-        entry.setdefault("patterns", {})[pattern_name] = {
-            "regex": pattern_data["regex"],
-            "fields": pattern_data.get("fields", []),
-            "cef_field": pattern_data.get("cef_field"),
-        }
+        pat = pattern_data.copy()
+        if "regex" not in pat and "pattern" in pat:
+            pat["regex"] = pat.pop("pattern")
+        pat.setdefault("enabled", True)
+        entry.setdefault("patterns", {})[pattern_name] = pat
         all_data[log_key] = entry
 
         os.makedirs(os.path.dirname(PER_LOG_PATTERNS_PATH), exist_ok=True)

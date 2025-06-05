@@ -15,8 +15,8 @@ def test_load_per_log_patterns_for_file(tmp_path, monkeypatch):
         "log": {
             "file": "/var/log/app.log",
             "patterns": {
-                "A": {"regex": "foo"},
-                "B": {"regex": "bar"},
+                "A": {"regex": "foo", "category": "x", "priority": 1},
+                "B": {"regex": "bar", "source": "builtin"},
             },
         }
     }
@@ -26,7 +26,11 @@ def test_load_per_log_patterns_for_file(tmp_path, monkeypatch):
     patterns = json_utils.load_per_log_patterns_for_file("/var/log/app.log")
     names = {p["name"] for p in patterns}
     assert names == {"A", "B"}
-    assert all(p["source"] == "per_log" for p in patterns)
+    srcs = {p["source"] for p in patterns}
+    assert srcs == {"per_log", "builtin"}
+    cat = next(p for p in patterns if p["name"] == "A")
+    assert cat["category"] == "x"
+    assert cat["priority"] == 1
 
 
 def test_cache_matches_includes_per_log(monkeypatch):
