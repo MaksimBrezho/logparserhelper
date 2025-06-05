@@ -152,7 +152,8 @@ def apply_highlighting(
     text_widget,
     matches_by_line: Dict[int, List[Dict]],
     active_names: set,
-    color_map: Dict[str, str]
+    color_map: Dict[str, str],
+    tag_map: Dict[str, Dict] | None = None,
 ):
     # Import GUI and color utilities lazily to avoid unnecessary dependencies
     # when this module is used purely for match computation in tests.
@@ -165,6 +166,9 @@ def apply_highlighting(
             text_widget.tag_delete(tag)
         except tk.TclError:
             pass
+
+    if tag_map is not None:
+        tag_map.clear()
 
     pattern_keys = []
     seen = set()
@@ -194,6 +198,9 @@ def apply_highlighting(
                 text_widget.tag_config(tag, background=shaded, underline=m.get('overlap', False))
                 text_widget.tag_bind(tag, "<Enter>", lambda e, t=tag, c=hover: text_widget.tag_config(t, background=c))
                 text_widget.tag_bind(tag, "<Leave>", lambda e, t=tag, c=shaded: text_widget.tag_config(t, background=c))
+
+            if tag_map is not None:
+                tag_map[tag] = m
 
             start_idx = f"{lineno}.{m['start']}"
             end_idx = f"{lineno}.{m['end']}"
