@@ -15,6 +15,7 @@ def test_save_per_log_pattern_creates_files(monkeypatch, tmp_path):
 
     pat = {"regex": "a", "category": "C", "source": "builtin", "priority": 5}
     json_utils.save_per_log_pattern("/var/log/app.log", "p1", pat, log_name="app")
+
     assert per_file.exists()
     assert map_file.exists()
 
@@ -38,4 +39,5 @@ def test_save_per_log_pattern_creates_files(monkeypatch, tmp_path):
     p = next(p for p in loaded if p["name"] == "p1")
     assert p["category"] == "C"
     assert p["source"] == "per_log"
+
     assert p["priority"] == 5
