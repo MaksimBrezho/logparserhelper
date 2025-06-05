@@ -13,6 +13,7 @@ from gui.pattern_panel import PatternPanel
 from utils.color_utils import generate_distinct_colors
 from gui.tooltip import ToolTip
 from gui.pattern_wizard import PatternWizardDialog
+from gui.code_generator_dialog import CodeGeneratorDialog
 from utils.text_utils import compute_char_coverage
 import logging
 import re
@@ -88,6 +89,7 @@ class AppWindow(tk.Frame):
         self.coverage_label.pack(side="left", padx=15)
         tk.Button(ctrl, text="Создать паттерн", command=self.open_pattern_wizard).pack(side="left", padx=5)
         tk.Button(ctrl, text="Сохранить паттерны", command=self.save_current_patterns).pack(side="left", padx=5)
+        tk.Button(ctrl, text="Генератор кода", command=self.open_code_generator).pack(side="left", padx=5)
         self.text_area.bind("<Motion>", self.on_hover)
         self.text_area.bind("<Leave>", lambda e: self.tooltip.hidetip())
 
@@ -302,6 +304,15 @@ class AppWindow(tk.Frame):
         except Exception as e:
             logger.error("[PatternWizard] %s", e)
             messagebox.showerror("Ошибка", f"Не удалось открыть мастер: {e}")
+
+    def open_code_generator(self):
+        """Open the code generator dialog (stub)."""
+        try:
+            dlg = CodeGeneratorDialog(self, per_log_patterns=self.per_log_patterns)
+            dlg.grab_set()
+        except Exception as e:
+            logger.error("[CodeGenerator] %s", e)
+            messagebox.showerror("Ошибка", f"Не удалось открыть генератор: {e}")
 
     def get_selected_lines(self):
         """Return selected fragments along with their full line context."""
