@@ -25,7 +25,7 @@ class CodeGeneratorDialog(tk.Toplevel):
         top.pack(fill="x", padx=10, pady=5)
         ttk.Label(top, text="Source Pattern Key:").grid(row=0, column=0, sticky="w")
         pattern_names = [p.get("name") for p in self.per_log_patterns]
-        self.pattern_var = tk.StringVar()
+        self.pattern_var = tk.StringVar(value=pattern_names[0] if pattern_names else "")
         combo = ttk.Combobox(top, textvariable=self.pattern_var, values=pattern_names, state="readonly")
         combo.grid(row=0, column=1, sticky="ew")
         top.grid_columnconfigure(1, weight=1)
