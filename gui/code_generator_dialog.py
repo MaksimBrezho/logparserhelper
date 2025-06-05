@@ -17,6 +17,7 @@ class CodeGeneratorDialog(tk.Toplevel):
         "name",
         "severity",
     ]
+
     def __init__(self, parent, per_log_patterns=None, logs=None):
         super().__init__(parent)
         self.title("CEF Code Generator Dialog")
@@ -25,7 +26,7 @@ class CodeGeneratorDialog(tk.Toplevel):
         self.logs = logs or []
         self.mappings = []
 
-
+        self.mappings = self._build_initial_mappings()
         self._build_ui()
 
     def _build_ui(self):
@@ -42,16 +43,14 @@ class CodeGeneratorDialog(tk.Toplevel):
             ("Event Name", "LoginAttempt"),
             ("Severity (int)", "5"),
         ]
-        for i, (label, default) in enumerate(fields):
-            ttk.Label(header, text=f"{label}:").grid(row=i, column=0, sticky="w", pady=2, padx=2)
+        for label, default in fields:
             var = tk.StringVar(value=default)
-            entry = ttk.Entry(header, textvariable=var)
-            if label == "CEF Version":
-                entry.config(state="disabled")
-            entry.grid(row=i, column=1, sticky="ew", pady=2, padx=2)
             self.header_vars[label] = var
-        header.grid_columnconfigure(1, weight=1)
 
+        ttk.Label(header, text="CEF Version:").grid(row=0, column=0, sticky="w", pady=2, padx=2)
+        entry = ttk.Entry(header, textvariable=self.header_vars["CEF Version"], state="disabled")
+        entry.grid(row=0, column=1, sticky="ew", pady=2, padx=2)
+        header.grid_columnconfigure(1, weight=1)
         self.mapping_frame = ttk.LabelFrame(self, text="Fields Auto-Mapped from Regex Patterns")
         self.mapping_frame.pack(fill="both", expand=True, padx=10, pady=5)
         self.mapping_list = ttk.Frame(self.mapping_frame)
@@ -66,6 +65,33 @@ class CodeGeneratorDialog(tk.Toplevel):
             self.mappings.append({"cef": key, "pattern": "", "transform": "none"})
 
         self._refresh_mapping_list()
+
+    def _build_initial_mappings(self):
+        patterns = self._collect_patterns()
+        cef_keys = set(json_utils.load_cef_field_keys())
+
+        by_field = {}
+        for p in patterns:
+            name = p.get("name")
+            if name in cef_keys:
+                by_field.setdefault(name, []).append(name)
+
+        mappings: list[dict] = []
+        for field in self.MANDATORY_FIELDS:
+            names = by_field.get(field, [])
+            if not names:
+                mappings.append({"cef": field, "pattern": "", "transform": "none"})
+            else:
+                for n in names:
+                    mappings.append({"cef": field, "pattern": n, "transform": "none"})
+
+        for field, names in by_field.items():
+            if field in self.MANDATORY_FIELDS:
+                continue
+            for n in names:
+                mappings.append({"cef": field, "pattern": n, "transform": "none"})
+
+        return mappings
 
     # ------------------------------------------------------------------
     # helpers
@@ -185,11 +211,19 @@ class CodeGeneratorDialog(tk.Toplevel):
 
         pattern_map = {p["name"]: p for p in self._collect_patterns()}
         all_names = list(pattern_map.keys())
+        counts = {}
+        for m in self.mappings:
+            counts[m["cef"]] = counts.get(m["cef"], 0) + 1
+        used = {}
 
         for idx, m in enumerate(self.mappings, start=1):
             regex = pattern_map.get(m["pattern"], {}).get("regex", "")
             example = self._find_example(regex)
-            ttk.Label(self.mapping_list, text=m["cef"]).grid(row=idx, column=0, sticky="w", padx=2)
+            label = m["cef"]
+            if counts.get(label, 0) > 1:
+                used[label] = used.get(label, 0) + 1
+                label = f"{label} {used[label]}"
+            ttk.Label(self.mapping_list, text=label).grid(row=idx, column=0, sticky="w", padx=2)
             var = tk.StringVar(value=m["pattern"])
             combo = ttk.Combobox(self.mapping_list, values=all_names, textvariable=var, state="readonly")
             combo.grid(row=idx, column=1, sticky="ew", padx=2)
@@ -199,3 +233,5 @@ class CodeGeneratorDialog(tk.Toplevel):
             ttk.Label(self.mapping_list, text=example).grid(row=idx, column=4, sticky="w", padx=2)
 
         self.mapping_list.grid_columnconfigure(1, weight=1)
+
+
