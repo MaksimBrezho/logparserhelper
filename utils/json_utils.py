@@ -154,6 +154,8 @@ def save_per_log_pattern(source_file, pattern_name, pattern_data, log_name=None)
         if "regex" not in pat and "pattern" in pat:
             pat["regex"] = pat.pop("pattern")
         pat.setdefault("enabled", True)
+        pat["source"] = "per_log"
+
         entry.setdefault("patterns", {})[pattern_name] = pat
         all_data[log_key] = entry
 

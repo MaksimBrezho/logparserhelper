@@ -28,6 +28,7 @@ class AppWindow(tk.Frame):
         self.page_size = 40
         self.current_page = 0
         self.patterns = []
+        self.per_log_patterns = []
         self.tooltip = ToolTip(self)
         self.pattern_panel = None
         self.match_cache = {}  # lineno -> list of matches
@@ -112,6 +113,7 @@ class AppWindow(tk.Frame):
         if getattr(self, "source_path", None):
             per_log_patterns = load_per_log_patterns_for_file(self.source_path)
             log_keys = get_log_keys_for_file(self.source_path)
+        self.per_log_patterns = per_log_patterns
 
         all_patterns = per_log_patterns + active_patterns
 
@@ -139,15 +141,16 @@ class AppWindow(tk.Frame):
             for m in matches:
                 matched_names.add(m["name"])
 
-        # visible_patterns = все найденные паттерны
-        visible_patterns = [p for p in self.patterns if p["name"] in matched_names]
+        # visible_patterns = все найденные паттерны, включая лог-специфические
+        all_known = self.patterns + getattr(self, "per_log_patterns", [])
+        visible_patterns = [p for p in all_known if p["name"] in matched_names]
 
         # active_patterns = включённые пользователем
         active_patterns = [p for p in visible_patterns if p.get("enabled", True)]
         active_names = set(p["name"] for p in active_patterns)
 
         # Формируем color_map по всем категориям
-        categories = sorted(set(p["category"] for p in visible_patterns))
+        categories = sorted(set(p.get("category") for p in visible_patterns))
         color_map = {cat: color for cat, color in zip(categories, generate_distinct_colors(len(categories)))}
 
         # Собираем matches для текущей страницы, но с относительной нумерацией

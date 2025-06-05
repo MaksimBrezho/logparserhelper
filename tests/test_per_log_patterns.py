@@ -53,3 +53,4 @@ def test_cache_matches_includes_per_log(monkeypatch):
 
     names = {m["name"] for m in app.match_cache[1]}
     assert names == {"A", "B"}
+    assert app.per_log_patterns == per_patterns
