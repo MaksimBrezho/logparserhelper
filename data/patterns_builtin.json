@@ -107,7 +107,7 @@
         },
         {
             "name": "Error Code",
-            "pattern": "code=\\{3}",
+            "pattern": "code=\\d{3}",
             "category": "Status",
             "source": "builtin",
             "priority": 60
