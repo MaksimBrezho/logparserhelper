@@ -73,3 +73,26 @@ def test_cache_matches_dedupes_duplicates(monkeypatch):
     matches = app.match_cache[1]
     assert len(matches) == 1
     assert matches[0]["source"] == "per_log"
+
+
+def test_load_per_log_patterns_by_key(tmp_path, monkeypatch):
+    file_path = tmp_path / "per.json"
+    monkeypatch.setattr(json_utils, "PER_LOG_PATTERNS_PATH", str(file_path))
+
+    data = {
+        "app": {
+            "file": "/var/log/app.log",
+            "patterns": {
+                "A": {"regex": "foo"},
+                "B": {"pattern": "bar"},
+            },
+        }
+    }
+    with open(file_path, "w", encoding="utf-8") as f:
+        json.dump(data, f)
+
+    pats = json_utils.load_per_log_patterns_by_key("app")
+    names = {p["name"] for p in pats}
+    assert names == {"A", "B"}
+    assert all(p["source"] == "per_log" for p in pats)
+    assert all("regex" in p for p in pats)
