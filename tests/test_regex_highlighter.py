@@ -38,6 +38,7 @@ def test_nonmatching_keys_blocked():
     assert matches[0]["name"] == "A"
 
 
+
 def test_per_log_blocks_other_sources():
     line = "alpha beta gamma"
     patterns = [
@@ -48,4 +49,5 @@ def test_per_log_blocks_other_sources():
     matches = compute_optimal_matches(line, patterns)
     assert len(matches) == 1
     assert matches[0]["name"] == "log_pat"
+
 
