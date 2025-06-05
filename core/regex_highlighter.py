@@ -1,9 +1,11 @@
 import re
 from typing import List, Dict
 
+
 # GUI and color utilities are imported lazily inside ``apply_highlighting`` so
 # that ``compute_optimal_matches`` can be used without requiring tkinter or
 # matplotlib at import time.
+
 
 
 def compute_optimal_matches(line: str, patterns: List[Dict]) -> List[Dict]:
@@ -20,6 +22,7 @@ def compute_optimal_matches(line: str, patterns: List[Dict]) -> List[Dict]:
             user.append(pat)
         else:
             builtin.append(pat)
+
 
     def _collect(pats, blocked=None):
         blocked = blocked or []
@@ -106,6 +109,7 @@ def compute_optimal_matches(line: str, patterns: List[Dict]) -> List[Dict]:
 
     intervals = [(m["start"], m["end"]) for m in per_log_matches]
 
+
     user_raw = _collect(user, intervals)
     user_matches = _wis(user_raw)
     intervals.extend((m["start"], m["end"]) for m in user_matches)
@@ -114,6 +118,7 @@ def compute_optimal_matches(line: str, patterns: List[Dict]) -> List[Dict]:
     builtin_matches = _wis(builtin_raw)
 
     all_matches = per_log_matches + user_matches + builtin_matches
+
     all_matches.sort(key=lambda m: m["start"])
 
     for i in range(len(all_matches)):
