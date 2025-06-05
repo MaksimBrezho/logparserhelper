@@ -13,3 +13,14 @@ def test_user_priority_over_builtin():
     result = compute_optimal_matches(line, patterns)
     assert len(result) == 1
     assert result[0]["name"] == "user"
+
+
+def test_tie_breaker_prefers_longer():
+    line = "abcdef"
+    patterns = [
+        {"name": "short", "regex": "abc", "priority": 1, "source": "builtin"},
+        {"name": "long", "regex": "abcdef", "priority": 1, "source": "builtin"},
+    ]
+    result = compute_optimal_matches(line, patterns)
+    assert len(result) == 1
+    assert result[0]["name"] == "long"

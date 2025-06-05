@@ -1,19 +1,35 @@
 import re
-import tkinter as tk
 from typing import List, Dict
-from utils.color_utils import get_shaded_color
+
+# GUI and color utilities are imported lazily inside ``apply_highlighting`` so
+# that ``compute_optimal_matches`` can be used without requiring tkinter or
+# matplotlib at import time.
 
 
 def compute_optimal_matches(line: str, patterns: List[Dict]) -> List[Dict]:
-    builtin_global = []
+    """Return list of pattern matches following priority rules."""
+
+    builtin = []
+    user = []
     per_log = []
     for pat in patterns:
-        if pat.get("source") == "per_log":
+        src = pat.get("source")
+        if src in {"per_log", "log"}:
             per_log.append(pat)
+        elif src == "user":
+            user.append(pat)
         else:
-            builtin_global.append(pat)
+            builtin.append(pat)
 
-    def _collect(pats):
+    def _collect(pats, blocked=None):
+        blocked = blocked or []
+
+        def overlaps(start: int, end: int) -> bool:
+            for s, e in blocked:
+                if start < e and end > s:
+                    return True
+            return False
+
         collected = []
         for pat in pats:
             regex = pat.get("regex") or pat.get("pattern")
@@ -22,6 +38,8 @@ def compute_optimal_matches(line: str, patterns: List[Dict]) -> List[Dict]:
             except re.error:
                 continue
             for m in compiled.finditer(line):
+                if overlaps(m.start(), m.end()):
+                    continue
                 collected.append({
                     "start": m.start(),
                     "end": m.end(),
@@ -36,11 +54,14 @@ def compute_optimal_matches(line: str, patterns: List[Dict]) -> List[Dict]:
         return collected
 
     def _wis(items):
+        """Weighted interval scheduling with deterministic tie breaking."""
         if not items:
             return []
+
         items.sort(key=lambda m: m["end"])
         n = len(items)
-        dp = [0] * n
+        dp_weight = [0] * n
+        dp_length = [0] * n
         prev = [-1] * n
 
         def find_last_non_conflicting(i):
@@ -50,16 +71,25 @@ def compute_optimal_matches(line: str, patterns: List[Dict]) -> List[Dict]:
             return -1
 
         for i in range(n):
-            incl = items[i]["priority"]
+            incl_w = items[i]["priority"]
+            incl_len = items[i]["length"]
             j = find_last_non_conflicting(i)
             if j != -1:
-                incl += dp[j]
-            excl = dp[i - 1] if i > 0 else 0
-            if incl > excl:
-                dp[i] = incl
+                incl_w += dp_weight[j]
+                incl_len += dp_length[j]
+            excl_w = dp_weight[i - 1] if i > 0 else 0
+            excl_len = dp_length[i - 1] if i > 0 else 0
+
+            if (
+                incl_w > excl_w
+                or (incl_w == excl_w and incl_len > excl_len)
+            ):
+                dp_weight[i] = incl_w
+                dp_length[i] = incl_len
                 prev[i] = j
             else:
-                dp[i] = excl
+                dp_weight[i] = excl_w
+                dp_length[i] = excl_len
                 prev[i] = -2  # special marker: skip this match
 
         result = []
@@ -72,9 +102,27 @@ def compute_optimal_matches(line: str, patterns: List[Dict]) -> List[Dict]:
                 i = prev[i]
         return list(reversed(result))
 
-    main_matches = _wis(_collect(builtin_global))
-    per_log_matches = _wis(_collect(per_log))
-    return sorted(main_matches + per_log_matches, key=lambda m: m["start"])
+    per_log_matches = _collect(per_log)
+
+    intervals = [(m["start"], m["end"]) for m in per_log_matches]
+
+    user_raw = _collect(user, intervals)
+    user_matches = _wis(user_raw)
+    intervals.extend((m["start"], m["end"]) for m in user_matches)
+
+    builtin_raw = _collect(builtin, intervals)
+    builtin_matches = _wis(builtin_raw)
+
+    all_matches = per_log_matches + user_matches + builtin_matches
+    all_matches.sort(key=lambda m: m["start"])
+
+    for i in range(len(all_matches)):
+        for j in range(i + 1, len(all_matches)):
+            if all_matches[i]["end"] > all_matches[j]["start"] and all_matches[j]["end"] > all_matches[i]["start"]:
+                all_matches[i]["overlap"] = True
+                all_matches[j]["overlap"] = True
+
+    return all_matches
 
 
 def find_matches_in_line(line: str, patterns: List[Dict]) -> List[Dict]:
@@ -88,6 +136,11 @@ def apply_highlighting(
     active_names: set,
     color_map: Dict[str, str]
 ):
+    # Import GUI and color utilities lazily to avoid unnecessary dependencies
+    # when this module is used purely for match computation in tests.
+    import tkinter as tk
+    from utils.color_utils import get_shaded_color, adjust_lightness
+
     for tag in text_widget.tag_names():
         text_widget.tag_remove(tag, "1.0", tk.END)
         try:
@@ -116,10 +169,13 @@ def apply_highlighting(
             idx = pattern_index_map.get(key, 0)
             base_color = color_map.get(m["category"], "black")
             shaded = get_shaded_color(base_color, idx, total)
+            hover = adjust_lightness(shaded, 1.3)
 
-            tag = f"{m['category']}_{m['regex']}"
+            tag = f"{lineno}_{m['start']}_{m['end']}_{m['name']}"
             if tag not in text_widget.tag_names():
-                text_widget.tag_config(tag, background=shaded)
+                text_widget.tag_config(tag, background=shaded, underline=m.get('overlap', False))
+                text_widget.tag_bind(tag, "<Enter>", lambda e, t=tag, c=hover: text_widget.tag_config(t, background=c))
+                text_widget.tag_bind(tag, "<Leave>", lambda e, t=tag, c=shaded: text_widget.tag_config(t, background=c))
 
             start_idx = f"{lineno}.{m['start']}"
             end_idx = f"{lineno}.{m['end']}"

@@ -23,6 +23,14 @@ def get_shaded_color(base_hex: str, index: int, total: int) -> str:
     return rgb_to_hex(shaded_rgb)
 
 
+def adjust_lightness(base_hex: str, factor: float) -> str:
+    """Lighten or darken a color by multiplying its lightness."""
+    rgb = hex_to_rgb(base_hex)
+    h, l, s = rgb_to_hls(*rgb)
+    l = max(0.0, min(1.0, l * factor))
+    return rgb_to_hex(hls_to_rgb(h, l, s))
+
+
 def generate_distinct_colors(n):
     import colorsys
     hues = [i / n for i in range(n)]

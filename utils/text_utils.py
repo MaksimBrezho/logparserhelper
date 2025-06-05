@@ -60,9 +60,35 @@ def compute_char_coverage(
     total = sum(count_significant_chars(line) for line in logs)
     if total == 0:
         return 0.0
+
     covered = 0
     for lineno, matches in matches_by_line.items():
+        ranges = []
         for m in matches:
-            if m.get("name") in active_names:
-                covered += count_significant_chars(m.get("match", ""))
+            if m.get("name") not in active_names:
+                continue
+            start = m.get("start")
+            end = m.get("end")
+            if start is None or end is None:
+                start = 0
+                end = len(m.get("match", ""))
+            ranges.append((start, end))
+
+        if not ranges:
+            continue
+
+        ranges.sort()
+        merged = [list(ranges[0])]
+        for start, end in ranges[1:]:
+            last = merged[-1]
+            if start <= last[1]:
+                last[1] = max(last[1], end)
+            else:
+                merged.append([start, end])
+
+        line_text = logs[lineno - 1] if 0 < lineno <= len(logs) else ""
+        for start, end in merged:
+            segment = line_text[start:end]
+            covered += count_significant_chars(segment)
+
     return covered / total * 100
