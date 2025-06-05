@@ -16,6 +16,8 @@ class DummyVar:
         return self.value
     def set(self, v):
         self.value = v
+    def trace_add(self, mode, func):
+        pass
 
 
 class DummyFrame:
@@ -112,3 +114,25 @@ def test_filter_cef_fields(monkeypatch):
     wiz.cef_search_var.set("dst")
     PatternWizardDialog._filter_cef_fields(wiz)
     assert [c.text for c in wiz.cef_field_inner.children] == ["dst"]
+
+
+def test_auto_select_category_single():
+    wiz = PatternWizardDialog.__new__(PatternWizardDialog)
+    wiz.selected_field_vars = {"src": DummyVar(True)}
+    wiz.cef_category_map = {"src": "Network"}
+    wiz.categories = ["User", "Network"]
+    wiz.category_var = DummyVar()
+    wiz.MULTI_CATEGORY = "Multiple"
+    PatternWizardDialog._auto_select_category(wiz)
+    assert wiz.category_var.get() == "Network"
+
+
+def test_auto_select_category_multi():
+    wiz = PatternWizardDialog.__new__(PatternWizardDialog)
+    wiz.selected_field_vars = {"src": DummyVar(True), "user": DummyVar(True)}
+    wiz.cef_category_map = {"src": "Network", "user": "User"}
+    wiz.categories = ["Network", "User", "Multiple"]
+    wiz.category_var = DummyVar("Initial")
+    wiz.MULTI_CATEGORY = "Multiple"
+    PatternWizardDialog._auto_select_category(wiz)
+    assert wiz.category_var.get() == "Multiple"

@@ -33,7 +33,17 @@ class PatternWizardDialog(tk.Toplevel):
         
         self.context_lines = context_lines
         self.cef_fields = cef_fields
-        self.categories = categories or []
+        self.cef_category_map = {
+            f.get("key"): f.get("category") for f in self.cef_fields
+            if f.get("key") and f.get("category")
+        }
+        cef_categories = {
+            f.get("category") for f in self.cef_fields if f.get("category")
+        }
+        self.MULTI_CATEGORY = "Multiple"
+        self.categories = sorted(
+            set(categories or []) | cef_categories | {self.MULTI_CATEGORY}
+        )
         self.source_file = source_file
         self.log_name = log_name
 
@@ -84,7 +94,8 @@ class PatternWizardDialog(tk.Toplevel):
         ttk.Entry(top_frame, textvariable=self.name_var, width=20).pack(side="left", padx=5)
 
         ttk.Label(top_frame, text="Категория:").pack(side="left")
-        ttk.Combobox(top_frame, textvariable=self.category_var, values=self.categories, width=20, state="readonly").pack(side="left", padx=5)
+        self.category_label = ttk.Label(top_frame, textvariable=self.category_var, width=20)
+        self.category_label.pack(side="left", padx=5)
 
         param_frame = ttk.Frame(self)
         param_frame.pack(fill="both", expand=True)
@@ -230,6 +241,7 @@ class PatternWizardDialog(tk.Toplevel):
         canvas.create_window((0, 0), window=self.cef_field_inner, anchor="nw")
 
         self._filter_cef_fields()
+        self._auto_select_category()
 
         # Кнопка сохранения
         ttk.Button(self, text="Сохранить", command=self._save).pack(pady=10)
@@ -448,6 +460,7 @@ class PatternWizardDialog(tk.Toplevel):
                 if not var:
                     var = tk.BooleanVar()
                     self.selected_field_vars[key] = var
+                    var.trace_add("write", lambda *_: self._auto_select_category())
                 chk = ttk.Checkbutton(
                     self.cef_field_inner,
                     text=key,
@@ -456,3 +469,23 @@ class PatternWizardDialog(tk.Toplevel):
                 chk.pack(anchor="w")
                 tip = f"{name}\nПример: {example}"
                 self._add_tip(chk, tip)
+
+    def _auto_select_category(self):
+        selected_keys = [k for k, v in self.selected_field_vars.items() if v.get()]
+        categories = {
+            self.cef_category_map.get(k)
+            for k in selected_keys
+            if self.cef_category_map.get(k)
+        }
+        if len(categories) == 1:
+            cat = next(iter(categories))
+        elif len(categories) > 1:
+            cat = self.MULTI_CATEGORY
+        else:
+            cat = ""
+
+        if cat and cat not in self.categories:
+            self.categories.append(cat)
+            self.categories.sort()
+
+        self.category_var.set(cat)
