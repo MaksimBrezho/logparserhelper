@@ -115,7 +115,16 @@ class AppWindow(tk.Frame):
             log_keys = get_log_keys_for_file(self.source_path)
         self.per_log_patterns = per_log_patterns
 
-        all_patterns = per_log_patterns + active_patterns
+        # merge per-log and global patterns by name, prefer per-log
+        pattern_map = {}
+        for p in per_log_patterns + active_patterns:
+            name = p.get("name")
+            if name not in pattern_map or p.get("source") == "per_log":
+                pattern_map[name] = p
+
+        self.per_log_patterns = per_log_patterns
+
+        all_patterns = list(pattern_map.values())
 
         for i, line in enumerate(self.logs, start=1):
             self.match_cache[i] = find_matches_in_line(line, all_patterns, log_keys)
@@ -143,7 +152,13 @@ class AppWindow(tk.Frame):
 
         # visible_patterns = все найденные паттерны, включая лог-специфические
         all_known = self.patterns + getattr(self, "per_log_patterns", [])
-        visible_patterns = [p for p in all_known if p["name"] in matched_names]
+        unique = {}
+        for p in all_known:
+            name = p.get("name")
+            if name not in unique or p.get("source") == "per_log":
+                unique[name] = p
+        visible_patterns = [p for n, p in unique.items() if n in matched_names]
+
 
         # active_patterns = включённые пользователем
         active_patterns = [p for p in visible_patterns if p.get("enabled", True)]

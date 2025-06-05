@@ -39,5 +39,4 @@ def test_save_per_log_pattern_creates_files(monkeypatch, tmp_path):
     p = next(p for p in loaded if p["name"] == "p1")
     assert p["category"] == "C"
     assert p["source"] == "per_log"
-
     assert p["priority"] == 5

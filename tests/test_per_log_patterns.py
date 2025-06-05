@@ -54,3 +54,22 @@ def test_cache_matches_includes_per_log(monkeypatch):
     names = {m["name"] for m in app.match_cache[1]}
     assert names == {"A", "B"}
     assert app.per_log_patterns == per_patterns
+
+def test_cache_matches_dedupes_duplicates(monkeypatch):
+    app = AppWindow.__new__(AppWindow)
+    app.logs = ["foo"]
+    app.patterns = [{"name": "A", "regex": "foo", "source": "user", "enabled": True}]
+    app.source_path = "/var/log/app.log"
+
+    per_patterns = [{"name": "A", "regex": "foo", "source": "per_log", "enabled": True}]
+
+    import gui.app_window as app_mod
+
+    monkeypatch.setattr(app_mod, "load_per_log_patterns_for_file", lambda p: per_patterns)
+    monkeypatch.setattr(app_mod, "get_log_keys_for_file", lambda p: [])
+
+    AppWindow._cache_matches(app)
+
+    matches = app.match_cache[1]
+    assert len(matches) == 1
+    assert matches[0]["source"] == "per_log"
