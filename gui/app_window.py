@@ -28,6 +28,7 @@ class AppWindow(tk.Frame):
         self.page_size = 40
         self.current_page = 0
         self.patterns = []
+        self.per_log_patterns = []
         self.tooltip = ToolTip(self)
         self.pattern_panel = None
         self.match_cache = {}  # lineno -> list of matches
@@ -113,7 +114,16 @@ class AppWindow(tk.Frame):
             per_log_patterns = load_per_log_patterns_for_file(self.source_path)
             log_keys = get_log_keys_for_file(self.source_path)
 
-        all_patterns = per_log_patterns + active_patterns
+        # merge per-log and global patterns by name, prefer per-log
+        pattern_map = {}
+        for p in per_log_patterns + active_patterns:
+            name = p.get("name")
+            if name not in pattern_map or p.get("source") == "per_log":
+                pattern_map[name] = p
+
+        self.per_log_patterns = per_log_patterns
+
+        all_patterns = list(pattern_map.values())
 
         for i, line in enumerate(self.logs, start=1):
             self.match_cache[i] = find_matches_in_line(line, all_patterns, log_keys)
@@ -139,15 +149,21 @@ class AppWindow(tk.Frame):
             for m in matches:
                 matched_names.add(m["name"])
 
-        # visible_patterns = все найденные паттерны
-        visible_patterns = [p for p in self.patterns if p["name"] in matched_names]
+        # visible_patterns = все найденные паттерны, включая лог-специфические
+        all_known = self.patterns + getattr(self, "per_log_patterns", [])
+        unique = {}
+        for p in all_known:
+            name = p.get("name")
+            if name not in unique or p.get("source") == "per_log":
+                unique[name] = p
+        visible_patterns = [p for n, p in unique.items() if n in matched_names]
 
         # active_patterns = включённые пользователем
         active_patterns = [p for p in visible_patterns if p.get("enabled", True)]
         active_names = set(p["name"] for p in active_patterns)
 
         # Формируем color_map по всем категориям
-        categories = sorted(set(p["category"] for p in visible_patterns))
+        categories = sorted(set(p.get("category") for p in visible_patterns))
         color_map = {cat: color for cat, color in zip(categories, generate_distinct_colors(len(categories)))}
 
         # Собираем matches для текущей страницы, но с относительной нумерацией
