@@ -40,7 +40,12 @@ class PatternWizardDialog(tk.Toplevel):
         cef_categories = {
             f.get("category") for f in self.cef_fields if f.get("category")
         }
-        self.categories = sorted(set(categories or []) | cef_categories)
+
+        self.MULTI_CATEGORY = "Multiple"
+        self.categories = sorted(
+            set(categories or []) | cef_categories | {self.MULTI_CATEGORY}
+        )
+
         self.source_file = source_file
         self.log_name = log_name
 
@@ -91,14 +96,10 @@ class PatternWizardDialog(tk.Toplevel):
         ttk.Entry(top_frame, textvariable=self.name_var, width=20).pack(side="left", padx=5)
 
         ttk.Label(top_frame, text="Категория:").pack(side="left")
-        self.category_combo = ttk.Combobox(
-            top_frame,
-            textvariable=self.category_var,
-            values=self.categories,
-            width=20,
-            state="readonly",
-        )
-        self.category_combo.pack(side="left", padx=5)
+
+        self.category_label = ttk.Label(top_frame, textvariable=self.category_var, width=20)
+        self.category_label.pack(side="left", padx=5)
+
 
         param_frame = ttk.Frame(self)
         param_frame.pack(fill="both", expand=True)
@@ -482,9 +483,15 @@ class PatternWizardDialog(tk.Toplevel):
         }
         if len(categories) == 1:
             cat = next(iter(categories))
-            if cat not in self.categories:
-                self.categories.append(cat)
-                self.categories.sort()
-                if hasattr(self, "category_combo"):
-                    self.category_combo["values"] = self.categories
-            self.category_var.set(cat)
+
+        elif len(categories) > 1:
+            cat = self.MULTI_CATEGORY
+        else:
+            cat = ""
+
+        if cat and cat not in self.categories:
+            self.categories.append(cat)
+            self.categories.sort()
+
+        self.category_var.set(cat)
+
