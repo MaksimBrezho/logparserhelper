@@ -71,6 +71,31 @@ def load_per_log_patterns_for_file(source_file: str) -> list[dict]:
     return result
 
 
+def load_per_log_patterns_by_key(log_key: str) -> list[dict]:
+    """Return patterns associated with a saved log key."""
+
+    try:
+        with open(PER_LOG_PATTERNS_PATH, "r", encoding="utf-8") as f:
+            data = json.load(f)
+    except (FileNotFoundError, json.JSONDecodeError):
+        return []
+
+    entry = data.get(log_key)
+    if not entry:
+        return []
+
+    result = []
+    for pat_name, pat in entry.get("patterns", {}).items():
+        pat = pat.copy()
+        if "regex" not in pat and "pattern" in pat:
+            pat["regex"] = pat.pop("pattern")
+        pat.setdefault("name", pat_name)
+        pat.setdefault("enabled", True)
+        pat.setdefault("source", "per_log")
+        result.append(pat)
+    return result
+
+
 def save_user_patterns(patterns):
     """Сохраняет пользовательские шаблоны."""
     to_save = {"patterns": patterns}
