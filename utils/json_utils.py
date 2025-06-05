@@ -12,6 +12,15 @@ BUILTIN_PATTERNS_PATH = os.path.join("data", "patterns_builtin.json")
 LOG_KEY_MAP_PATH = os.path.join("data", "log_key_map.json")
 BUILTIN_PATTERN_KEYS_PATH = os.path.join("data", "builtin_pattern_keys.json")
 CEF_FIELDS_PATH = os.path.join("data", "cef_fields.json")
+PER_LOG_PATTERNS_PATH = os.path.join(USER_DATA_DIR, "per_log_patterns.json")
+
+def load_builtin_pattern_keys():
+    try:
+        with open(BUILTIN_PATTERN_KEYS_PATH, "r", encoding="utf-8") as f:
+            return json.load(f)
+    except (FileNotFoundError, json.JSONDecodeError):
+        return {}
+
 
 def load_builtin_pattern_keys():
     try:
@@ -42,6 +51,32 @@ def load_all_patterns():
             return []
 
     return _read(USER_PATTERNS_PATH) + _read(BUILTIN_PATTERNS_PATH, is_builtin=True)
+
+
+def load_per_log_patterns_for_file(source_file: str) -> list[dict]:
+    """Return patterns tied to the given log file."""
+
+    try:
+        with open(PER_LOG_PATTERNS_PATH, "r", encoding="utf-8") as f:
+            data = json.load(f)
+    except (FileNotFoundError, json.JSONDecodeError):
+        return []
+
+    result = []
+    for name, entry in data.items():
+        file_path = entry.get("file")
+        if file_path == source_file or os.path.basename(file_path) == os.path.basename(source_file):
+            patterns = entry.get("patterns", {})
+            for pat_name, pat in patterns.items():
+                pat = pat.copy()
+                if "regex" not in pat and "pattern" in pat:
+                    pat["regex"] = pat.pop("pattern")
+                pat.setdefault("name", pat_name)
+                pat.setdefault("enabled", True)
+                pat["source"] = "per_log"
+                result.append(pat)
+            break
+    return result
 
 
 def save_user_patterns(patterns):
