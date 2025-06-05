@@ -122,7 +122,9 @@ def test_auto_select_category_single():
     wiz.cef_category_map = {"src": "Network"}
     wiz.categories = ["User", "Network"]
     wiz.category_var = DummyVar()
+
     wiz.MULTI_CATEGORY = "Multiple"
+
     PatternWizardDialog._auto_select_category(wiz)
     assert wiz.category_var.get() == "Network"
 
@@ -136,3 +138,4 @@ def test_auto_select_category_multi():
     wiz.MULTI_CATEGORY = "Multiple"
     PatternWizardDialog._auto_select_category(wiz)
     assert wiz.category_var.get() == "Multiple"
+
