@@ -6,6 +6,8 @@ from utils.json_utils import (
     get_log_name_for_file,
     get_log_keys_for_file,
     load_per_log_patterns_for_file,
+    load_per_log_patterns_by_key,
+    load_log_key_map,
     save_per_log_pattern,
 )
 from core.regex_highlighter import find_matches_in_line, apply_highlighting
@@ -308,7 +310,16 @@ class AppWindow(tk.Frame):
     def open_code_generator(self):
         """Open the code generator dialog (stub)."""
         try:
-            dlg = CodeGeneratorDialog(self, per_log_patterns=self.per_log_patterns)
+            per_patterns = list(self.per_log_patterns)
+            if not per_patterns:
+                keys = list(load_log_key_map().keys())
+                if keys:
+                    prompt = "Выберите ключ лог-файла:\n" + ", ".join(keys)
+                    key = simpledialog.askstring("Log Key", prompt, parent=self)
+                    if key:
+                        per_patterns = load_per_log_patterns_by_key(key)
+
+            dlg = CodeGeneratorDialog(self, per_log_patterns=per_patterns, logs=self.logs)
             dlg.grab_set()
         except Exception as e:
             logger.error("[CodeGenerator] %s", e)
