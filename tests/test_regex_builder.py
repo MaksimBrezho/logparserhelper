@@ -1,9 +1,4 @@
 import re
-import os
-import sys
-
-# Ensure the core package is importable when running tests directly
-sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 
 from core.regex.regex_builder import build_draft_regex_from_examples
 

@@ -1,9 +1,6 @@
-import sys
-import os
 import tkinter as tk
 from tkinter import ttk
 
-sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
 
 from gui.transform_editor import TransformEditorDialog
 
@@ -198,3 +195,43 @@ def test_drag_updates_token_order(monkeypatch):
     dlg._on_drag_stop(DummyEvent(widget=dlg.token_widgets[0]))
 
     assert dlg.token_order == [1, 2, 0]
+
+
+def test_drag_updates_example(monkeypatch):
+    dlg = TransformEditorDialog.__new__(TransformEditorDialog)
+
+    class DummyFrame:
+        def winfo_rootx(self):
+            return 0
+
+    class DummyLabel:
+        def __init__(self, idx):
+            self.token_idx = idx
+            self._x = idx * 10
+        def winfo_x(self):
+            return self._x
+        def winfo_width(self):
+            return 8
+        def pack_forget(self, *a, **k):
+            pass
+        def pack(self, *a, **k):
+            pass
+
+    dlg.token_frame = DummyFrame()
+    dlg.token_widgets = [DummyLabel(0), DummyLabel(1), DummyLabel(2)]
+    dlg.token_order = [0, 1, 2]
+
+    called = {}
+    def fake_update():
+        called['hit'] = True
+    dlg._update_example_box = fake_update
+
+    class DummyEvent:
+        def __init__(self, widget=None, x_root=0):
+            self.widget = widget
+            self.x_root = x_root
+
+    dlg._on_drag_start(DummyEvent(widget=dlg.token_widgets[0]))
+    dlg._on_drag_motion(DummyEvent(widget=dlg.token_widgets[0], x_root=50))
+
+    assert called.get('hit')

@@ -1,10 +1,5 @@
-import sys
-import os
 import re
 import pytest
-
-# Добавим путь к корню проекта, чтобы core был виден
-sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 
 from core.regex.generalizer import generalize_token
 

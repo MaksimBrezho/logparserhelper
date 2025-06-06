@@ -1,11 +1,7 @@
-import sys
-import os
 import re
 import pytest
 from typing import List
 
-# Добавляем core/ в PYTHONPATH
-sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 
 from core.regex.enum_generator import EnumRegexGenerator
 

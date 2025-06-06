@@ -1,8 +1,3 @@
-import sys
-import os
-
-sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
-
 from utils.transform_logic import apply_transform
 
 
@@ -58,3 +53,49 @@ def test_reorder_tokens_no_groups():
         'token_order': [4, 3, 2, 1, 0]
     }
     assert apply_transform('01/02/2024', spec) == '2024/02/01'
+
+
+def test_apply_transform_complex_reorder():
+    spec = {
+        'format': 'none',
+        'regex': r'[a-zA-Z]+ {1,2}\d{1,2}\ \d{2}:\d{2}:\d{2}',
+        'token_order': [2, 3, 4, 5, 6, 7, 8, 1, 0]
+    }
+    examples = [
+        'Jun 14 15:16:01',
+        'Jun 14 15:16:02',
+        'Jun 15 02:04:59',
+        'Jun 15 04:06:18',
+        'Jun 15 04:06:19',
+    ]
+    results = [apply_transform(e, spec) for e in examples]
+    assert results == [
+        '14 15:16:01 Jun',
+        '14 15:16:02 Jun',
+        '15 02:04:59 Jun',
+        '15 04:06:18 Jun',
+        '15 04:06:19 Jun',
+    ]
+
+
+def test_apply_transform_lookahead_reorder():
+    spec = {
+        'format': 'none',
+        'regex': r'[a-zA-Z]+ {1,2}\d{1,2}\ \d{2}:\d{2}:\d{2}(?= combo)',
+        'token_order': [2, 3, 4, 5, 6, 7, 8, 1, 0],
+    }
+    examples = [
+        'Jun 14 15:16:01 combo',
+        'Jun 14 15:16:02 combo',
+        'Jun 15 02:04:59 combo',
+        'Jun 15 04:06:18 combo',
+        'Jun 15 04:06:19 combo',
+    ]
+    results = [apply_transform(e, spec) for e in examples]
+    assert results == [
+        '14 15:16:01 Jun',
+        '14 15:16:02 Jun',
+        '15 02:04:59 Jun',
+        '15 04:06:18 Jun',
+        '15 04:06:19 Jun',
+    ]

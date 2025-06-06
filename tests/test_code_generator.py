@@ -1,8 +1,5 @@
 import os
-import sys
 from importlib.machinery import SourceFileLoader
-
-sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 
 from utils.code_generator import generate_files
 

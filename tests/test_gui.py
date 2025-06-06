@@ -1,9 +1,5 @@
-import sys
-import os
 import types
 import tkinter as tk
-
-sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 
 from gui.app_window import AppWindow
 from gui.pattern_panel import PatternPanel
