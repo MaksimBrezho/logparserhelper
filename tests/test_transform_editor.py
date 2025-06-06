@@ -32,6 +32,9 @@ def test_get_spec():
     dlg.map_text = DummyText('info=1\nerror=8\n')
     dlg.replace_pattern_var = DummyVar('foo')
     dlg.replace_with_var = DummyVar('BAR')
+    dlg.token_order = []
+    dlg.tokens = []
+    dlg.regex = ''
 
     spec = TransformEditorDialog._get_spec(dlg)
     assert spec == {
@@ -39,4 +42,22 @@ def test_get_spec():
         'value_map': {'info': '1', 'error': '8'},
         'replace_pattern': 'foo',
         'replace_with': 'BAR',
+    }
+
+
+def test_get_spec_token_order():
+    dlg = TransformEditorDialog.__new__(TransformEditorDialog)
+    dlg.var = DummyVar('lower')
+    dlg.map_text = DummyText('')
+    dlg.replace_pattern_var = DummyVar('')
+    dlg.replace_with_var = DummyVar('')
+    dlg.token_order = [1, 0]
+    dlg.tokens = ['a', 'b']
+    dlg.regex = r'(\w+) (\w+)'
+
+    spec = TransformEditorDialog._get_spec(dlg)
+    assert spec == {
+        'format': 'lower',
+        'token_order': [1, 0],
+        'regex': r'(\w+) (\w+)'
     }
