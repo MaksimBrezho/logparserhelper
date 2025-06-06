@@ -27,9 +27,14 @@ class CodeGeneratorDialog(tk.Toplevel):
         self.per_log_patterns = per_log_patterns or []
         self.logs = logs or []
 
-
-        self.mappings = self._build_initial_mappings()
+        config = json_utils.load_conversion_config()
+        self.mappings = config.get("mappings") or self._build_initial_mappings()
         self._build_ui()
+        header_data = config.get("header", {})
+        for key, var in self.header_vars.items():
+            var.set(header_data.get(key, var.get()))
+
+        self.protocol("WM_DELETE_WINDOW", self._on_close)
 
     def _build_ui(self):
         header = ttk.LabelFrame(self, text="CEF Header")
@@ -191,15 +196,18 @@ class CodeGeneratorDialog(tk.Toplevel):
             return
         self.mappings.append({"cef": field, "pattern": "", "value": "", "transform": "none"})
         self._refresh_mapping_list()
+        self._save_config()
 
     def _on_pattern_changed(self, idx, var):
         self.mappings[idx]["pattern"] = var.get()
         if var.get():
             self.mappings[idx]["value"] = ""
         self._refresh_mapping_list()
+        self._save_config()
 
     def _on_value_changed(self, idx, var):
         self.mappings[idx]["value"] = var.get()
+        self._save_config()
 
     def _on_edit_transform(self, idx):
         m = self.mappings[idx]
@@ -223,6 +231,7 @@ class CodeGeneratorDialog(tk.Toplevel):
         if dlg.result is not None:
             m["transform"] = dlg.result
             self._refresh_mapping_list()
+            self._save_config()
 
     def _gather_mappings(self):
         result = []
@@ -313,5 +322,15 @@ class CodeGeneratorDialog(tk.Toplevel):
             ttk.Label(self.mapping_list, text=transformed).grid(row=idx, column=5, sticky="w", padx=2)
 
         self.mapping_list.grid_columnconfigure(1, weight=1)
+
+    # ------------------------------------------------------------------
+    def _save_config(self):
+        header = {k: v.get() for k, v in self.header_vars.items()}
+        data = {"header": header, "mappings": self.mappings}
+        json_utils.save_conversion_config(data)
+
+    def _on_close(self):
+        self._save_config()
+        self.destroy()
 
 
