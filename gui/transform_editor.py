@@ -21,6 +21,9 @@ class TransformEditorDialog(tk.Toplevel):
         self.title(f"Transform Editor for CEF Field: {cef_field}")
         self.minsize(300, 360)
         self.examples = examples or []
+        self.regex = regex
+        self.tokens = []
+        self.token_order = []
         if regex:
             ttk.Label(self, text="Regex:").pack(anchor="w", padx=10, pady=(5, 0))
             regex_box = tk.Text(self, height=1, width=40)
@@ -72,11 +75,90 @@ class TransformEditorDialog(tk.Toplevel):
         rep_frame.grid_columnconfigure(0, weight=1)
         rep_frame.grid_columnconfigure(1, weight=1)
 
+        if self.regex:
+            self._init_token_editor()
+
         btns = ttk.Frame(self)
         btns.pack(pady=10)
         ttk.Button(btns, text="Save", command=self._on_save).pack(side="left", padx=5)
         ttk.Button(btns, text="Cancel", command=self.destroy).pack(side="left", padx=5)
         # initial examples rendering
+        self._update_example_box()
+
+    # ------------------------------------------------------------------
+    def _init_token_editor(self):
+        import re
+
+        pat = re.compile(self.regex)
+        value = None
+        for ex in self.examples:
+            m = pat.search(ex)
+            if m:
+                value = ex
+                break
+        if value is None:
+            return
+
+        tokens = []
+        pos = m.start()
+        for i in range(1, (m.lastindex or 0) + 1):
+            literal = value[pos:m.start(i)]
+            if literal:
+                tokens.append(literal)
+            tokens.append(m.group(i))
+            pos = m.end(i)
+        tail = value[pos:m.end()]
+        if tail:
+            tokens.append(tail)
+
+        self.tokens = tokens
+        self.token_order = list(range(len(tokens)))
+
+        ttk.Label(self, text="Reorder tokens (drag to move, Del to remove):").pack(anchor="w", padx=10, pady=(5, 0))
+        frame = ttk.Frame(self)
+        frame.pack(fill="x", padx=10)
+        self.token_list = tk.Listbox(frame, selectmode="browse", height=min(5, len(tokens)))
+        self._refresh_token_list()
+        self.token_list.pack(side="left", fill="both", expand=True)
+        sb = ttk.Scrollbar(frame, orient="vertical", command=self.token_list.yview)
+        sb.pack(side="right", fill="y")
+        self.token_list.config(yscrollcommand=sb.set)
+        self.token_list.bind("<Button-1>", self._on_drag_start)
+        self.token_list.bind("<B1-Motion>", self._on_drag_motion)
+        self.token_list.bind("<ButtonRelease-1>", self._on_drag_stop)
+        self.token_list.bind("<Delete>", lambda e: self._delete_token())
+
+    def _refresh_token_list(self):
+        if not hasattr(self, "token_list"):
+            return
+        self.token_list.delete(0, tk.END)
+        for idx in self.token_order:
+            self.token_list.insert(tk.END, self.tokens[idx])
+
+    def _on_drag_start(self, event):
+        self._drag_index = self.token_list.nearest(event.y)
+        self.token_list.selection_clear(0, tk.END)
+        self.token_list.selection_set(self._drag_index)
+
+    def _on_drag_motion(self, event):
+        idx = self.token_list.nearest(event.y)
+        if idx != getattr(self, "_drag_index", None):
+            tok = self.token_order.pop(self._drag_index)
+            self.token_order.insert(idx, tok)
+            self._drag_index = idx
+            self._refresh_token_list()
+
+    def _on_drag_stop(self, event):
+        self._drag_index = None
+        self._update_example_box()
+
+    def _delete_token(self):
+        sel = self.token_list.curselection()
+        if not sel:
+            return
+        idx = sel[0]
+        self.token_order.pop(idx)
+        self._refresh_token_list()
         self._update_example_box()
     @staticmethod
     def _parse_mapping(text: str) -> dict:
@@ -99,6 +181,11 @@ class TransformEditorDialog(tk.Toplevel):
         if replace_pat:
             result["replace_pattern"] = replace_pat
             result["replace_with"] = replace_with
+        if self.token_order:
+            default = list(range(len(self.tokens)))
+            if self.token_order != default:
+                result["token_order"] = self.token_order
+                result["regex"] = self.regex
 
         if list(result.keys()) == ["format"]:
             return result["format"]

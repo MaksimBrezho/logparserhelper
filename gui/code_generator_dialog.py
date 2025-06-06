@@ -203,6 +203,10 @@ class CodeGeneratorDialog(tk.Toplevel):
         pattern_map = {p["name"]: p for p in self._collect_patterns()}
         regex = pattern_map.get(m.get("pattern"), {}).get("regex", "")
         examples = self._find_examples(regex) if regex else []
+        if regex and not examples:
+            ex = self._find_example(regex)
+            if ex:
+                examples = [ex]
         dlg = TransformEditorDialog(self, m["cef"], current=m["transform"], regex=regex, examples=examples)
         dlg.grab_set()
         self.wait_window(dlg)
