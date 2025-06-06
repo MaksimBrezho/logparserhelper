@@ -23,6 +23,15 @@ def test_apply_transform_dict_map():
     assert apply_transform('error', spec) == '8'
 
 
+def test_apply_transform_dict_map_substring():
+    spec = {
+        'format': 'none',
+        'value_map': {'ERROR': '1', 'WARN': '2'},
+    }
+    assert apply_transform('Info: ERROR', spec) == 'Info: 1'
+    assert apply_transform('Detail WARN here', spec) == 'Detail 2 here'
+
+
 def test_apply_transform_dict_replace():
     spec = {
         'format': 'none',
