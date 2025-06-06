@@ -201,7 +201,14 @@ class CodeGeneratorDialog(tk.Toplevel):
             ex = self._find_example(regex)
             if ex:
                 examples = [ex]
-        dlg = TransformEditorDialog(self, m["cef"], current=m["transform"], regex=regex, examples=examples)
+        dlg = TransformEditorDialog(
+            self,
+            m["cef"],
+            current=m["transform"],
+            regex=regex,
+            examples=examples,
+            logs=self.logs,
+        )
         dlg.grab_set()
         self.wait_window(dlg)
         if dlg.result is not None:
