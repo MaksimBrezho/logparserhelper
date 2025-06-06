@@ -1,35 +1,34 @@
-
 import os
 import tkinter as tk
-from tkinter import ttk, messagebox, simpledialog
+from tkinter import ttk, messagebox
+
 from gui.transform_editor import TransformEditorDialog
-
-
-
 from utils import json_utils, code_generator
 
 
 class CodeGeneratorDialog(tk.Toplevel):
     """Dialog for configuring and generating CEF converter code."""
 
-    def __init__(self, parent, per_log_patterns=None):
+    MANDATORY_FIELDS = [
+        "deviceVendor",
+        "deviceProduct",
+        "deviceVersion",
+        "signatureID",
+        "name",
+        "severity",
+    ]
+
+    def __init__(self, parent, per_log_patterns=None, logs=None):
         super().__init__(parent)
         self.title("CEF Code Generator Dialog")
-        self.minsize(600, 400)
+        self.minsize(700, 500)
         self.per_log_patterns = per_log_patterns or []
+        self.logs = logs or []
 
+        self.mappings = self._build_initial_mappings()
         self._build_ui()
 
     def _build_ui(self):
-        top = ttk.Frame(self)
-        top.pack(fill="x", padx=10, pady=5)
-        ttk.Label(top, text="Source Pattern Key:").grid(row=0, column=0, sticky="w")
-        pattern_names = [p.get("name") for p in self.per_log_patterns]
-        self.pattern_var = tk.StringVar()
-        combo = ttk.Combobox(top, textvariable=self.pattern_var, values=pattern_names, state="readonly")
-        combo.grid(row=0, column=1, sticky="ew")
-        top.grid_columnconfigure(1, weight=1)
-
         header = ttk.LabelFrame(self, text="CEF Header")
         header.pack(fill="x", padx=10, pady=5)
 
@@ -43,38 +42,57 @@ class CodeGeneratorDialog(tk.Toplevel):
             ("Event Name", "LoginAttempt"),
             ("Severity (int)", "5"),
         ]
-        for i, (label, default) in enumerate(fields):
-            ttk.Label(header, text=f"{label}:").grid(row=i, column=0, sticky="w", pady=2, padx=2)
+        for label, default in fields:
             var = tk.StringVar(value=default)
-            entry = ttk.Entry(header, textvariable=var)
-            if label == "CEF Version":
-                entry.config(state="disabled")
-            entry.grid(row=i, column=1, sticky="ew", pady=2, padx=2)
             self.header_vars[label] = var
+
+        ttk.Label(header, text="CEF Version:").grid(row=0, column=0, sticky="w", pady=2, padx=2)
+        entry = ttk.Entry(header, textvariable=self.header_vars["CEF Version"], state="disabled")
+        entry.grid(row=0, column=1, sticky="ew", pady=2, padx=2)
         header.grid_columnconfigure(1, weight=1)
 
-        fields_frame = ttk.LabelFrame(self, text="Fields Auto-Mapped from Regex Patterns")
-        fields_frame.pack(fill="both", expand=True, padx=10, pady=10)
+        self.mapping_frame = ttk.LabelFrame(self, text="Fields Auto-Mapped from Regex Patterns")
+        self.mapping_frame.pack(fill="both", expand=True, padx=10, pady=5)
+        self.mapping_list = ttk.Frame(self.mapping_frame)
+        self.mapping_list.pack(fill="both", expand=True)
 
-        columns = ("cef_field", "source", "transform", "preview")
-        self.tree = ttk.Treeview(fields_frame, columns=columns, show="headings", height=5)
-        for col in columns:
-            heading = "CEF Fields" if col == "cef_field" else col.title()
-            self.tree.heading(col, text=heading)
-        self.tree.pack(fill="both", expand=True)
-        self.tree.bind("<Double-1>", self._on_edit)
-
-
-        # sample initial rows
-        self.tree.insert("", "end", values=("time", "ISODate", "none", ""))
-        self.tree.insert("", "end", values=("user", "UserName", "none", ""))
-        self.tree.insert("", "end", values=("msg", "Message", "none", ""))
         btns = ttk.Frame(self)
         btns.pack(fill="x", pady=5)
         ttk.Button(btns, text="+ Add Field", command=self._on_add_field).pack(side="left", padx=5)
         ttk.Button(btns, text="Preview Code ▸", command=self._on_preview).pack(side="right", padx=5)
         ttk.Button(btns, text="Generate Python", command=self._on_generate).pack(side="right", padx=5)
 
+        self._refresh_mapping_list()
+
+    def _build_initial_mappings(self):
+        patterns = self._collect_patterns()
+        cef_keys = set(json_utils.load_cef_field_keys())
+
+        by_field = {}
+        for p in patterns:
+            name = p.get("name")
+            if name in cef_keys:
+                by_field.setdefault(name, []).append(name)
+
+        mappings: list[dict] = []
+        for field in self.MANDATORY_FIELDS:
+            names = by_field.get(field, [])
+            if not names:
+                mappings.append({"cef": field, "pattern": "", "value": "", "transform": "none"})
+            else:
+                for n in names:
+                    mappings.append({"cef": field, "pattern": n, "value": "", "transform": "none"})
+
+        for field, names in by_field.items():
+            if field in self.MANDATORY_FIELDS:
+                continue
+            for n in names:
+                mappings.append({"cef": field, "pattern": n, "value": "", "transform": "none"})
+
+        return mappings
+
+    # ------------------------------------------------------------------
+    # helpers
     def _collect_patterns(self) -> list:
         patterns = {p["name"]: p for p in json_utils.load_all_patterns()}
         for p in self.per_log_patterns:
@@ -84,30 +102,80 @@ class CodeGeneratorDialog(tk.Toplevel):
             for name, pat in patterns.items()
         ]
 
-    def _row_to_mapping(self, item):
-        values = self.tree.item(item, "values")
-        return {
-            "cef": values[0],
-            "pattern": values[1],
-            "group": 0,
-            "transform": values[2] or "none",
-        }
+    def _find_example(self, regex: str) -> str:
+        import re
+
+        try:
+            pat = re.compile(regex)
+        except re.error:
+            return ""
+        for line in self.logs:
+            m = pat.search(line)
+            if m:
+                return m.group(0)
+        return ""
+
+    def _choose_cef_field(self):
+        keys = json_utils.load_cef_field_keys()
+        if not keys:
+            messagebox.showerror("Error", "No CEF fields available")
+            return None
+        dlg = tk.Toplevel(self)
+        dlg.title("Choose CEF Field")
+        var = tk.StringVar(value=keys[0])
+        combo = ttk.Combobox(dlg, values=keys, textvariable=var, state="readonly")
+        combo.pack(padx=10, pady=10)
+        result = {"val": None}
+
+        def ok():
+            result["val"] = var.get()
+            dlg.destroy()
+
+        ttk.Button(dlg, text="OK", command=ok).pack(pady=5)
+        dlg.grab_set()
+        self.wait_window(dlg)
+        return result["val"]
 
     def _on_add_field(self):
-        cef_field = simpledialog.askstring("CEF Field", "Enter CEF field key")
-        if not cef_field:
+        field = self._choose_cef_field()
+        if not field:
             return
-        pattern = simpledialog.askstring("Source Pattern", "Enter pattern name")
-        if not pattern:
-            return
-        self.tree.insert("", "end", values=(cef_field, pattern, "none", ""))
+        self.mappings.append({"cef": field, "pattern": "", "value": "", "transform": "none"})
+        self._refresh_mapping_list()
 
+    def _on_pattern_changed(self, idx, var):
+        self.mappings[idx]["pattern"] = var.get()
+        if var.get():
+            self.mappings[idx]["value"] = ""
+        self._refresh_mapping_list()
+
+    def _on_value_changed(self, idx, var):
+        self.mappings[idx]["value"] = var.get()
+
+    def _on_edit_transform(self, idx):
+        m = self.mappings[idx]
+        dlg = TransformEditorDialog(self, m["cef"], current=m["transform"])
+        dlg.grab_set()
+        self.wait_window(dlg)
+        if dlg.result is not None:
+            m["transform"] = dlg.result
+            self._refresh_mapping_list()
+
+    def _gather_mappings(self):
+        result = []
+        for m in self.mappings:
+            if m.get("pattern"):
+                result.append({"cef": m["cef"], "pattern": m["pattern"], "group": 0, "transform": m["transform"]})
+            elif m.get("value"):
+                result.append({"cef": m["cef"], "value": m["value"], "transform": m["transform"]})
+        return result
+
+    # ------------------------------------------------------------------
     def _on_preview(self):
-        # generate code into a temporary directory and show the converter code
         import tempfile, pathlib
 
         header = {k: v.get() for k, v in self.header_vars.items()}
-        mappings = [self._row_to_mapping(item) for item in self.tree.get_children()]
+        mappings = self._gather_mappings()
         patterns = self._collect_patterns()
 
         tmp_dir = tempfile.mkdtemp()
@@ -128,7 +196,7 @@ class CodeGeneratorDialog(tk.Toplevel):
 
     def _on_generate(self):
         header = {k: v.get() for k, v in self.header_vars.items()}
-        mappings = [self._row_to_mapping(item) for item in self.tree.get_children()]
+        mappings = self._gather_mappings()
         patterns = self._collect_patterns()
         out_dir = os.path.join(os.getcwd(), "generated_cef")
         try:
@@ -137,15 +205,44 @@ class CodeGeneratorDialog(tk.Toplevel):
         except Exception as e:
             messagebox.showerror("Error", str(e))
 
+    # ------------------------------------------------------------------
+    def _refresh_mapping_list(self):
+        for child in self.mapping_list.winfo_children():
+            child.destroy()
 
-    def _on_edit(self, event):
-        item = self.tree.identify_row(event.y)
-        if not item:
-            return
-        values = self.tree.item(item, "values")
-        cef_field, pattern, transform = values[:3]
-        dlg = TransformEditorDialog(self, cef_field, current=transform)
-        dlg.grab_set()
-        self.wait_window(dlg)
-        if dlg.result is not None:
-            self.tree.item(item, values=(cef_field, pattern, dlg.result, values[3]))
+        headers = ["CEF Field", "Pattern", "Regex", "Transform", "Example"]
+        for col, text in enumerate(headers):
+            ttk.Label(self.mapping_list, text=text, font=("Segoe UI", 9, "bold")).grid(row=0, column=col, sticky="w", padx=2)
+
+        pattern_map = {p["name"]: p for p in self._collect_patterns()}
+        all_names = list(pattern_map.keys())
+
+        counts = {}
+        for m in self.mappings:
+            counts[m["cef"]] = counts.get(m["cef"], 0) + 1
+        used = {}
+
+        for idx, m in enumerate(self.mappings, start=1):
+            regex = pattern_map.get(m.get("pattern"), {}).get("regex", "")
+            example = self._find_example(regex) if regex else ""
+            label = m["cef"]
+            if counts.get(label, 0) > 1:
+                used[label] = used.get(label, 0) + 1
+                label = f"{label} {used[label]}"
+            ttk.Label(self.mapping_list, text=label).grid(row=idx, column=0, sticky="w", padx=2)
+            if m.get("pattern"):
+                var = tk.StringVar(value=m["pattern"])
+                combo = ttk.Combobox(self.mapping_list, values=all_names, textvariable=var, state="readonly")
+                combo.grid(row=idx, column=1, sticky="ew", padx=2)
+                combo.bind("<<ComboboxSelected>>", lambda e, i=idx-1, v=var: self._on_pattern_changed(i, v))
+            else:
+                var = tk.StringVar(value=m.get("value", ""))
+                entry = ttk.Entry(self.mapping_list, textvariable=var)
+                entry.grid(row=idx, column=1, sticky="ew", padx=2)
+                entry.bind("<KeyRelease>", lambda e, i=idx-1, v=var: self._on_value_changed(i, v))
+            ttk.Label(self.mapping_list, text=regex).grid(row=idx, column=2, sticky="w", padx=2)
+            ttk.Button(self.mapping_list, text=m["transform"], command=lambda i=idx-1: self._on_edit_transform(i)).grid(row=idx, column=3, sticky="w", padx=2)
+            ttk.Label(self.mapping_list, text=example).grid(row=idx, column=4, sticky="w", padx=2)
+
+        self.mapping_list.grid_columnconfigure(1, weight=1)
+

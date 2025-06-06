@@ -38,3 +38,20 @@ def test_generate_files_and_converter(tmp_path):
     result = conv.convert_line('user=john')
     assert 'ACME' in result and 'JOHN' in result
 
+
+def test_generate_files_constant_value(tmp_path):
+    header = {'CEF Version': '0'}
+    patterns = []
+    mappings = [{
+        'cef': 'deviceVendor',
+        'value': 'ACME',
+        'transform': 'none',
+    }]
+
+    paths = generate_files(header, mappings, patterns, tmp_path)
+    loader = SourceFileLoader('cef_converter', paths[0])
+    module = loader.load_module()
+    conv = module.LogToCEFConverter()
+    result = conv.convert_line('line')
+    assert 'deviceVendor=ACME' in result
+
