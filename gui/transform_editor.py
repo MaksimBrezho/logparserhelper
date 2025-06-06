@@ -15,12 +15,13 @@ class TransformEditorDialog(tk.Toplevel):
         ("sentence", "Sentence case"),
     ]
 
-    def __init__(self, parent, cef_field: str, current: object = "none", *, regex: str = "", examples: list[str] | None = None):
+    def __init__(self, parent, cef_field: str, current: object = "none", *, regex: str = "", examples: list[str] | None = None, logs: list[str] | None = None):
         super().__init__(parent)
         self.result = None
         self.title(f"Transform Editor for CEF Field: {cef_field}")
         self.minsize(300, 360)
         self.examples = examples or []
+        self.logs = logs or []
         self.regex = regex
         self.tokens = []
         self.token_order = []
@@ -91,18 +92,20 @@ class TransformEditorDialog(tk.Toplevel):
 
         pat = re.compile(self.regex)
         best = None
-        for ex in self.examples:
-            m = pat.search(ex)
+        search_space = getattr(self, "logs", []) or self.examples
+        for line in search_space:
+            m = pat.search(line)
             if not m:
                 continue
             # choose the match with the most groups/longest span
             if best is None or (m.lastindex or 0) > (best[0].lastindex or 0) or (
                 (m.lastindex or 0) == (best[0].lastindex or 0) and m.end() - m.start() > best[0].end() - best[0].start()
             ):
-                best = (m, ex)
+                best = (m, line)
         if best is None:
             return
-        m, value = best
+        m, line = best
+        value = line
 
         tokens = []
         pos = m.start()
