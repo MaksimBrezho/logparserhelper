@@ -16,6 +16,7 @@ from utils.color_utils import generate_distinct_colors
 from gui.tooltip import ToolTip
 from gui.pattern_wizard import PatternWizardDialog
 from gui.code_generator_dialog import CodeGeneratorDialog
+from gui.cef_field_dialog import CEFFieldDialog
 from utils.text_utils import compute_char_coverage
 import logging
 import re
@@ -373,7 +374,22 @@ class AppWindow(tk.Frame):
             p for p in self.patterns
             if p["name"] in matched_names and p.get("enabled", True)
         ]
+
         for pat in patterns_to_save:
-            save_per_log_pattern(self.source_path, pat["name"], pat, log_name=log_name)
+            data = pat.copy()
+            if data.get("source") == "builtin":
+                dlg = CEFFieldDialog(
+                    self,
+                    self.cef_fields,
+                    data.get("name", ""),
+                    initial=data.get("fields", [])
+                )
+                dlg.grab_set()
+                self.wait_window(dlg)
+                if dlg.result is None:
+                    continue
+                data["fields"] = dlg.result
+
+            save_per_log_pattern(self.source_path, data["name"], data, log_name=log_name)
 
         messagebox.showinfo("Готово", "Паттерны сохранены.")
