@@ -66,12 +66,19 @@ class CodeGeneratorDialog(tk.Toplevel):
         self._refresh_mapping_list()
 
     def _build_initial_mappings(self):
-        patterns = self._collect_patterns()
+        # Only consider patterns that are present for this log file
+        patterns = list(self.per_log_patterns)
         cef_keys = set(json_utils.load_cef_field_keys())
 
         by_field = {}
         for p in patterns:
             name = p.get("name")
+            fields = p.get("fields", [])
+
+            for fld in fields:
+                if fld in cef_keys:
+                    by_field.setdefault(fld, []).append(name)
+
             if name in cef_keys:
                 by_field.setdefault(name, []).append(name)
 
@@ -98,10 +105,17 @@ class CodeGeneratorDialog(tk.Toplevel):
         patterns = {p["name"]: p for p in json_utils.load_all_patterns()}
         for p in self.per_log_patterns:
             patterns[p.get("name")] = p
-        return [
-            {"name": name, "regex": pat.get("regex", pat.get("pattern", ""))}
-            for name, pat in patterns.items()
-        ]
+
+        result = []
+        for name, pat in patterns.items():
+            entry = {
+                "name": name,
+                "regex": pat.get("regex", pat.get("pattern", "")),
+            }
+            if "fields" in pat:
+                entry["fields"] = pat["fields"]
+            result.append(entry)
+        return result
 
     def _find_example(self, regex: str) -> str:
         import re
