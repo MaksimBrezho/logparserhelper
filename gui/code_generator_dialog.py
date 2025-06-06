@@ -62,8 +62,6 @@ class CodeGeneratorDialog(tk.Toplevel):
         ttk.Button(btns, text="+ Add Field", command=self._on_add_field).pack(side="left", padx=5)
         ttk.Button(btns, text="Preview Code ▸", command=self._on_preview).pack(side="right", padx=5)
         ttk.Button(btns, text="Generate Python", command=self._on_generate).pack(side="right", padx=5)
-        for key in self.MANDATORY_FIELDS:
-            self.mappings.append({"cef": key, "pattern": "", "transform": "none"})
 
         self._refresh_mapping_list()
 
