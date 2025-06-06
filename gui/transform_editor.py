@@ -331,14 +331,9 @@ class TransformEditorDialog(tk.Toplevel):
 
             transformed_line = apply_transform(line, spec)
 
-            if prefix:
-                self.example_box.insert("end", prefix, "context")
+            # Only show the example before and after transformation.
+            # Skip any surrounding log context for a cleaner display.
             self.example_box.insert("end", ex)
-            self.example_box.insert("end", " -> ")
-            self.example_box.insert("end", transformed_line)
-            if suffix:
-                self.example_box.insert("end", suffix, "context")
-
             self.example_box.insert("end", " -> ")
             self.example_box.insert("end", transformed_line)
             self.example_box.insert("end", "\n")
