@@ -392,4 +392,8 @@ class AppWindow(tk.Frame):
 
             save_per_log_pattern(self.source_path, data["name"], data, log_name=log_name)
 
+        # Reload per-log patterns and matches so other dialogs see updates
+        self._cache_matches()
+        self.render_page()
+
         messagebox.showinfo("Готово", "Паттерны сохранены.")

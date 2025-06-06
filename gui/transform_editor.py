@@ -20,7 +20,6 @@ class TransformEditorDialog(tk.Toplevel):
         self.result = None
         self.title(f"Transform Editor for CEF Field: {cef_field}")
         self.minsize(300, 360)
-
         self.examples = examples or []
         if regex:
             ttk.Label(self, text="Regex:").pack(anchor="w", padx=10, pady=(5, 0))
@@ -71,14 +70,28 @@ class TransformEditorDialog(tk.Toplevel):
         rep_frame.grid_columnconfigure(0, weight=1)
         rep_frame.grid_columnconfigure(1, weight=1)
 
+        ttk.Label(self, text="Value map (key=value per line):").pack(anchor="w", padx=10, pady=(10, 5))
+        self.map_text = tk.Text(self, height=4, width=40)
+        self.map_text.pack(fill="x", padx=10)
+        if mapping_text:
+            self.map_text.insert("1.0", mapping_text)
+
+        rep_frame = ttk.Frame(self)
+        rep_frame.pack(fill="x", padx=10, pady=5)
+        ttk.Label(rep_frame, text="Replace if pattern matches:").grid(row=0, column=0, sticky="w")
+        self.replace_pattern_var = tk.StringVar(value=replace_pat)
+        self.replace_with_var = tk.StringVar(value=replace_with)
+        ttk.Entry(rep_frame, textvariable=self.replace_pattern_var).grid(row=1, column=0, sticky="ew")
+        ttk.Entry(rep_frame, textvariable=self.replace_with_var).grid(row=1, column=1, sticky="ew")
+        rep_frame.grid_columnconfigure(0, weight=1)
+        rep_frame.grid_columnconfigure(1, weight=1)
+
         btns = ttk.Frame(self)
         btns.pack(pady=10)
         ttk.Button(btns, text="Save", command=self._on_save).pack(side="left", padx=5)
         ttk.Button(btns, text="Cancel", command=self.destroy).pack(side="left", padx=5)
-
         # initial examples rendering
         self._update_example_box()
-
     @staticmethod
     def _parse_mapping(text: str) -> dict:
         mapping = {}
@@ -87,7 +100,6 @@ class TransformEditorDialog(tk.Toplevel):
                 k, v = line.split('=', 1)
                 mapping[k.strip()] = v.strip()
         return mapping
-
     def _get_spec(self) -> object:
         """Return the transformation spec from current UI values."""
         fmt = self.var.get()

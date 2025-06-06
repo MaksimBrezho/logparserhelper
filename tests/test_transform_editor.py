@@ -10,7 +10,6 @@ def test_parse_mapping():
     result = TransformEditorDialog._parse_mapping(text)
     assert result == {'info': '1', 'error': '8'}
 
-
 class DummyVar:
     def __init__(self, value):
         self.value = value

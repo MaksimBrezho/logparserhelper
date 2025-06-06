@@ -19,7 +19,6 @@ def test_find_examples():
     result = dlg._find_examples(r"user=(\w+)")
     assert result == ["john", "jane"]
 
-
 def test_initial_mappings_duplicate(monkeypatch):
     dlg = CodeGeneratorDialog.__new__(CodeGeneratorDialog)
     dlg.per_log_patterns = [
