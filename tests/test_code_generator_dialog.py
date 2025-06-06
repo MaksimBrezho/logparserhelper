@@ -65,3 +65,17 @@ def test_initial_mappings_from_fields(monkeypatch):
     assert start.count("Time Range") == 1
     assert end == ["Time Range"]
 
+
+def test_get_transformed_example():
+    dlg = CodeGeneratorDialog.__new__(CodeGeneratorDialog)
+    dlg.logs = ["user=john"]
+    result = CodeGeneratorDialog._get_transformed_example(dlg, r"user=\w+", "upper")
+    assert result == "USER=JOHN"
+
+
+def test_get_transformed_example_constant():
+    dlg = CodeGeneratorDialog.__new__(CodeGeneratorDialog)
+    dlg.logs = []
+    result = CodeGeneratorDialog._get_transformed_example(dlg, "", "lower", value="ACME")
+    assert result == "acme"
+

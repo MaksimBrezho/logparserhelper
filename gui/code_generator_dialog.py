@@ -2,6 +2,8 @@ import os
 import tkinter as tk
 from tkinter import ttk, messagebox
 
+from utils.transform_logic import apply_transform
+
 from gui.transform_editor import TransformEditorDialog
 from utils import json_utils, code_generator
 
@@ -155,6 +157,13 @@ class CodeGeneratorDialog(tk.Toplevel):
                     break
         return result
 
+    def _get_transformed_example(self, regex: str, transform: object, value: str = "") -> str:
+        """Return an example value after applying the transform."""
+        raw = self._find_example(regex) if regex else value
+        if not raw:
+            return ""
+        return apply_transform(raw, transform)
+
     def _choose_cef_field(self):
         keys = json_utils.load_cef_field_keys()
         if not keys:
@@ -265,7 +274,7 @@ class CodeGeneratorDialog(tk.Toplevel):
         for child in self.mapping_list.winfo_children():
             child.destroy()
 
-        headers = ["CEF Field", "Pattern", "Regex", "Transform", "Example"]
+        headers = ["CEF Field", "Pattern", "Regex", "Transform", "Example", "Result"]
         for col, text in enumerate(headers):
             ttk.Label(self.mapping_list, text=text, font=("Segoe UI", 9, "bold")).grid(row=0, column=col, sticky="w", padx=2)
 
@@ -279,7 +288,8 @@ class CodeGeneratorDialog(tk.Toplevel):
 
         for idx, m in enumerate(self.mappings, start=1):
             regex = pattern_map.get(m.get("pattern"), {}).get("regex", "")
-            example = self._find_example(regex) if regex else ""
+            example = self._find_example(regex) if regex else m.get("value", "")
+            transformed = self._get_transformed_example(regex, m.get("transform", "none"), m.get("value", ""))
 
             label = m["cef"]
             if counts.get(label, 0) > 1:
@@ -300,6 +310,7 @@ class CodeGeneratorDialog(tk.Toplevel):
             btn_text = m["transform"] if isinstance(m.get("transform"), str) else "custom"
             ttk.Button(self.mapping_list, text=btn_text, command=lambda i=idx-1: self._on_edit_transform(i)).grid(row=idx, column=3, sticky="w", padx=2)
             ttk.Label(self.mapping_list, text=example).grid(row=idx, column=4, sticky="w", padx=2)
+            ttk.Label(self.mapping_list, text=transformed).grid(row=idx, column=5, sticky="w", padx=2)
 
         self.mapping_list.grid_columnconfigure(1, weight=1)
 
