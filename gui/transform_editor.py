@@ -75,7 +75,7 @@ class TransformEditorDialog(tk.Toplevel):
         rep_frame.grid_columnconfigure(0, weight=1)
         rep_frame.grid_columnconfigure(1, weight=1)
 
-        if self.regex and self.examples:
+        if self.regex:
             self._init_token_editor()
 
         btns = ttk.Frame(self)
@@ -89,15 +89,14 @@ class TransformEditorDialog(tk.Toplevel):
     def _init_token_editor(self):
         import re
 
-        sample = None
         pat = re.compile(self.regex)
+        value = None
         for ex in self.examples:
             m = pat.search(ex)
             if m:
-                sample = ex[m.start():m.end()]
                 value = ex
                 break
-        if sample is None:
+        if value is None:
             return
 
         tokens = []
