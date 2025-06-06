@@ -73,7 +73,13 @@ class LogToCEFConverter:
                 if re.fullmatch(m['replace_pattern'], value):
                     value = m.get('replace_with', '')
             if m.get('value_map'):
-                value = m['value_map'].get(value, value)
+                mapping = m['value_map']
+                if value in mapping:
+                    value = mapping[value]
+                else:
+                    for k, v in mapping.items():
+                        if k in value:
+                            value = value.replace(k, v)
 
             fields[m['cef']] = apply_transform(value, m.get('transform', 'none'))
         return self._build_cef_string(fields)
