@@ -105,3 +105,27 @@ def test_generate_files_advanced(tmp_path):
     assert 'severity=8' in result
     assert 'app=UNKNOWN' in result
 
+
+def test_generate_files_value_map_substring(tmp_path):
+    header = {'CEF Version': '0'}
+    patterns = [
+        {'name': 'Msg', 'regex': r'msg=(.*)'}
+    ]
+    mappings = [
+        {
+            'cef': 'msg',
+            'pattern': 'Msg',
+            'group': 1,
+            'value_map': {'ERROR': '1', 'WARN': '2'},
+            'transform': 'none',
+        },
+    ]
+
+    paths = generate_files(header, mappings, patterns, tmp_path)
+    loader = SourceFileLoader('cef_converter', paths[0])
+    module = loader.load_module()
+    conv = module.LogToCEFConverter()
+    line = 'msg=Info: ERROR and more'
+    result = conv.convert_line(line)
+    assert 'msg=Info: 1 and more' in result
+

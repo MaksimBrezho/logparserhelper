@@ -33,6 +33,10 @@ def apply_transform(value: str, transform: Any) -> str:
             mapping: Dict[str, str] = transform["value_map"]
             if value in mapping:
                 value = mapping[value]
+            else:
+                for k, v in mapping.items():
+                    if k in (value or ""):
+                        value = (value or "").replace(k, v)
         return _apply_basic_transform(value, fmt)
     return _apply_basic_transform(value, str(transform))
 

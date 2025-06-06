@@ -57,6 +57,8 @@ class TransformEditorDialog(tk.Toplevel):
         if mapping_text:
             self.map_text.insert("1.0", mapping_text)
         self.map_text.bind("<KeyRelease>", lambda e: self._update_example_box())
+        apply_btn = ttk.Button(self, text="Apply", command=self._update_example_box)
+        apply_btn.pack(anchor="e", padx=10, pady=(0, 5))
 
         rep_frame = ttk.Frame(self)
         rep_frame.pack(fill="x", padx=10, pady=5)
@@ -67,22 +69,6 @@ class TransformEditorDialog(tk.Toplevel):
         ttk.Entry(rep_frame, textvariable=self.replace_with_var).grid(row=1, column=1, sticky="ew")
         self.replace_pattern_var.trace_add("write", lambda *_: self._update_example_box())
         self.replace_with_var.trace_add("write", lambda *_: self._update_example_box())
-        rep_frame.grid_columnconfigure(0, weight=1)
-        rep_frame.grid_columnconfigure(1, weight=1)
-
-        ttk.Label(self, text="Value map (key=value per line):").pack(anchor="w", padx=10, pady=(10, 5))
-        self.map_text = tk.Text(self, height=4, width=40)
-        self.map_text.pack(fill="x", padx=10)
-        if mapping_text:
-            self.map_text.insert("1.0", mapping_text)
-
-        rep_frame = ttk.Frame(self)
-        rep_frame.pack(fill="x", padx=10, pady=5)
-        ttk.Label(rep_frame, text="Replace if pattern matches:").grid(row=0, column=0, sticky="w")
-        self.replace_pattern_var = tk.StringVar(value=replace_pat)
-        self.replace_with_var = tk.StringVar(value=replace_with)
-        ttk.Entry(rep_frame, textvariable=self.replace_pattern_var).grid(row=1, column=0, sticky="ew")
-        ttk.Entry(rep_frame, textvariable=self.replace_with_var).grid(row=1, column=1, sticky="ew")
         rep_frame.grid_columnconfigure(0, weight=1)
         rep_frame.grid_columnconfigure(1, weight=1)
 
