@@ -317,17 +317,22 @@ class TransformEditorDialog(tk.Toplevel):
         self.example_box.tag_configure("context", foreground="gray")
 
         for ex in self.examples:
-            transformed = apply_transform(ex, spec)
-
             prefix = ""
             suffix = ""
+            full_line = ex
             if pat and self.logs:
-                for line in self.logs:
-                    m = pat.search(line)
+                for line_text in self.logs:
+                    m = pat.search(line_text)
                     if m and m.group(0) == ex:
-                        prefix = line[: m.start()]
-                        suffix = line[m.end() :]
+                        prefix = line_text[: m.start()]
+                        suffix = line_text[m.end() :]
+                        full_line = line_text
                         break
+
+            if "token_order" in spec:
+                transformed_part = apply_transform(full_line, spec)
+            else:
+                transformed_part = apply_transform(ex, spec)
 
             if prefix:
                 self.example_box.insert("end", prefix, "context")
@@ -335,7 +340,7 @@ class TransformEditorDialog(tk.Toplevel):
             if suffix:
                 self.example_box.insert("end", suffix, "context")
             self.example_box.insert("end", " -> ")
-            self.example_box.insert("end", transformed)
+            self.example_box.insert("end", transformed_part)
             self.example_box.insert("end", "\n")
 
         self.example_box.config(state="disabled")
