@@ -90,14 +90,19 @@ class TransformEditorDialog(tk.Toplevel):
         import re
 
         pat = re.compile(self.regex)
-        value = None
+        best = None
         for ex in self.examples:
             m = pat.search(ex)
-            if m:
-                value = ex
-                break
-        if value is None:
+            if not m:
+                continue
+            # choose the match with the most groups/longest span
+            if best is None or (m.lastindex or 0) > (best[0].lastindex or 0) or (
+                (m.lastindex or 0) == (best[0].lastindex or 0) and m.end() - m.start() > best[0].end() - best[0].start()
+            ):
+                best = (m, ex)
+        if best is None:
             return
+        m, value = best
 
         tokens = []
         pos = m.start()
