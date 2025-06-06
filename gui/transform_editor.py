@@ -15,7 +15,16 @@ class TransformEditorDialog(tk.Toplevel):
         ("sentence", "Sentence case"),
     ]
 
-    def __init__(self, parent, cef_field: str, current: object = "none", *, regex: str = "", examples: list[str] | None = None, logs: list[str] | None = None):
+    def __init__(
+        self,
+        parent,
+        cef_field: str,
+        current: object = "none",
+        *,
+        regex: str = "",
+        examples: list[str] | None = None,
+        logs: list[str] | None = None,
+    ):
         super().__init__(parent)
         self.result = None
         self.title(f"Transform Editor for CEF Field: {cef_field}")
@@ -34,13 +43,17 @@ class TransformEditorDialog(tk.Toplevel):
 
         if self.examples:
             ttk.Label(self, text="Examples:").pack(anchor="w", padx=10, pady=(5, 0))
-            self.example_box = tk.Text(self, height=min(5, len(self.examples)), width=40)
+            self.example_box = tk.Text(
+                self, height=min(5, len(self.examples)), width=40
+            )
             self.example_box.pack(fill="x", padx=10)
             self.example_box.config(state="disabled")
 
         if isinstance(current, dict):
             fmt = current.get("format", "none")
-            mapping_text = "\n".join(f"{k}={v}" for k, v in current.get("value_map", {}).items())
+            mapping_text = "\n".join(
+                f"{k}={v}" for k, v in current.get("value_map", {}).items()
+            )
             replace_pat = current.get("replace_pattern", "")
             replace_with = current.get("replace_with", "")
         else:
@@ -52,10 +65,14 @@ class TransformEditorDialog(tk.Toplevel):
         ttk.Label(self, text="Formatting:").pack(anchor="w", padx=10, pady=(10, 5))
         self.var = tk.StringVar(value=fmt)
         for value, label in self.TRANSFORMS:
-            ttk.Radiobutton(self, text=label, variable=self.var, value=value).pack(anchor="w", padx=20)
+            ttk.Radiobutton(self, text=label, variable=self.var, value=value).pack(
+                anchor="w", padx=20
+            )
         self.var.trace_add("write", lambda *_: self._update_example_box())
 
-        ttk.Label(self, text="Value map (key=value per line):").pack(anchor="w", padx=10, pady=(10, 5))
+        ttk.Label(self, text="Value map (key=value per line):").pack(
+            anchor="w", padx=10, pady=(10, 5)
+        )
         self.map_text = tk.Text(self, height=4, width=40)
         self.map_text.pack(fill="x", padx=10)
         if mapping_text:
@@ -66,12 +83,20 @@ class TransformEditorDialog(tk.Toplevel):
 
         rep_frame = ttk.Frame(self)
         rep_frame.pack(fill="x", padx=10, pady=5)
-        ttk.Label(rep_frame, text="Replace if pattern matches:").grid(row=0, column=0, sticky="w")
+        ttk.Label(rep_frame, text="Replace if pattern matches:").grid(
+            row=0, column=0, sticky="w"
+        )
         self.replace_pattern_var = tk.StringVar(value=replace_pat)
         self.replace_with_var = tk.StringVar(value=replace_with)
-        ttk.Entry(rep_frame, textvariable=self.replace_pattern_var).grid(row=1, column=0, sticky="ew")
-        ttk.Entry(rep_frame, textvariable=self.replace_with_var).grid(row=1, column=1, sticky="ew")
-        self.replace_pattern_var.trace_add("write", lambda *_: self._update_example_box())
+        ttk.Entry(rep_frame, textvariable=self.replace_pattern_var).grid(
+            row=1, column=0, sticky="ew"
+        )
+        ttk.Entry(rep_frame, textvariable=self.replace_with_var).grid(
+            row=1, column=1, sticky="ew"
+        )
+        self.replace_pattern_var.trace_add(
+            "write", lambda *_: self._update_example_box()
+        )
         self.replace_with_var.trace_add("write", lambda *_: self._update_example_box())
         rep_frame.grid_columnconfigure(0, weight=1)
         rep_frame.grid_columnconfigure(1, weight=1)
@@ -98,8 +123,13 @@ class TransformEditorDialog(tk.Toplevel):
             if not m:
                 continue
             # choose the match with the most groups/longest span
-            if best is None or (m.lastindex or 0) > (best[0].lastindex or 0) or (
-                (m.lastindex or 0) == (best[0].lastindex or 0) and m.end() - m.start() > best[0].end() - best[0].start()
+            if (
+                best is None
+                or (m.lastindex or 0) > (best[0].lastindex or 0)
+                or (
+                    (m.lastindex or 0) == (best[0].lastindex or 0)
+                    and m.end() - m.start() > best[0].end() - best[0].start()
+                )
             ):
                 best = (m, line)
         if best is None:
@@ -108,73 +138,112 @@ class TransformEditorDialog(tk.Toplevel):
         value = line
 
         tokens = []
-        pos = m.start()
-        for i in range(1, (m.lastindex or 0) + 1):
-            literal = value[pos:m.start(i)]
-            if literal:
-                tokens.append(literal)
-            tokens.append(m.group(i))
-            pos = m.end(i)
-        tail = value[pos:m.end()]
-        if tail:
-            tokens.append(tail)
+        if m.lastindex:
+            pos = m.start()
+            for i in range(1, (m.lastindex or 0) + 1):
+                literal = value[pos : m.start(i)]
+                if literal:
+                    tokens.append(literal)
+                tokens.append(m.group(i))
+                pos = m.end(i)
+            tail = value[pos : m.end()]
+            if tail:
+                tokens.append(tail)
+        else:
+            span = value[m.start() : m.end()]
+            tokens = [t for t in re.split(r"([a-zA-Z]+|\d+|\W)", span) if t]
 
         self.tokens = tokens
         self.token_order = list(range(len(tokens)))
 
-        frame = ttk.LabelFrame(self, text="Reorder tokens (drag to move, Del to remove)")
+        frame = ttk.LabelFrame(
+            self, text="Reorder tokens (drag to move, Del to remove)"
+        )
         frame.pack(fill="x", padx=10, pady=(5, 0))
-        self.token_list = tk.Listbox(frame, selectmode="browse", height=min(5, len(tokens)))
+        self.token_frame = ttk.Frame(frame)
+        self.token_frame.pack(fill="x")
+        self.token_widgets: list[ttk.Label] = []
         self._refresh_token_list()
-        self.token_list.pack(side="left", fill="both", expand=True)
-        sb = ttk.Scrollbar(frame, orient="vertical", command=self.token_list.yview)
-        sb.pack(side="right", fill="y")
-        self.token_list.config(yscrollcommand=sb.set)
-        self.token_list.bind("<Button-1>", self._on_drag_start)
-        self.token_list.bind("<B1-Motion>", self._on_drag_motion)
-        self.token_list.bind("<ButtonRelease-1>", self._on_drag_stop)
-        self.token_list.bind("<Delete>", lambda e: self._delete_token())
 
     def _refresh_token_list(self):
-        if not hasattr(self, "token_list"):
+        if not hasattr(self, "token_frame"):
             return
-        self.token_list.delete(0, tk.END)
+        for w in getattr(self, "token_widgets", []):
+            w.destroy()
+        self.token_widgets = []
         for idx in self.token_order:
-            self.token_list.insert(tk.END, self.tokens[idx])
+            lbl = ttk.Label(
+                self.token_frame,
+                text=self.tokens[idx],
+                relief="raised",
+                borderwidth=1,
+                padding=(4, 2),
+            )
+            lbl.token_idx = idx
+            lbl.pack(side="left", padx=2, pady=2)
+            lbl.bind("<Button-1>", self._on_drag_start)
+            lbl.bind("<B1-Motion>", self._on_drag_motion)
+            lbl.bind("<ButtonRelease-1>", self._on_drag_stop)
+            lbl.bind("<Delete>", self._delete_token)
+            lbl.bind("<Double-Button-1>", self._delete_token)
+            self.token_widgets.append(lbl)
+        self.token_frame.update_idletasks()
 
     def _on_drag_start(self, event):
-        self._drag_index = self.token_list.nearest(event.y)
-        self.token_list.selection_clear(0, tk.END)
-        self.token_list.selection_set(self._drag_index)
+        widget = event.widget
+        self._drag_widget = widget
+        self._drag_index = self.token_widgets.index(widget)
 
     def _on_drag_motion(self, event):
-        idx = self.token_list.nearest(event.y)
-        if idx != getattr(self, "_drag_index", None):
-            tok = self.token_order.pop(self._drag_index)
-            self.token_order.insert(idx, tok)
-            self._drag_index = idx
+        if not hasattr(self, "_drag_widget") or self._drag_widget is None:
+            return
+        x = event.x_root - self.token_frame.winfo_rootx()
+        new_index = len(self.token_widgets) - 1
+        for i, w in enumerate(self.token_widgets):
+            if w is self._drag_widget:
+                continue
+            mid = w.winfo_x() + w.winfo_width() / 2
+            if x < mid:
+                new_index = i
+                break
+        if new_index > self._drag_index:
+            new_index -= 1
+        if new_index != self._drag_index:
+            w = self.token_widgets.pop(self._drag_index)
+            self.token_widgets.insert(new_index, w)
+            self.token_order = [wid.token_idx for wid in self.token_widgets]
+            self._drag_index = new_index
             self._refresh_token_list()
 
     def _on_drag_stop(self, event):
+        self._drag_widget = None
         self._drag_index = None
         self._update_example_box()
 
-    def _delete_token(self):
-        sel = self.token_list.curselection()
-        if not sel:
+    def _delete_token(self, event=None):
+        if not hasattr(self, "token_widgets"):
             return
-        idx = sel[0]
+        if event is None:
+            return
+        widget = event.widget
+        if widget not in self.token_widgets:
+            return
+        idx = self.token_widgets.index(widget)
         self.token_order.pop(idx)
+        self.token_widgets.pop(idx)
+        widget.destroy()
         self._refresh_token_list()
         self._update_example_box()
+
     @staticmethod
     def _parse_mapping(text: str) -> dict:
         mapping = {}
         for line in text.strip().splitlines():
-            if '=' in line:
-                k, v = line.split('=', 1)
+            if "=" in line:
+                k, v = line.split("=", 1)
                 mapping[k.strip()] = v.strip()
         return mapping
+
     def _get_spec(self) -> object:
         """Return the transformation spec from current UI values."""
         fmt = self.var.get()

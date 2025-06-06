@@ -32,16 +32,20 @@ def _reorder_tokens(value: str, regex: str, order: List[int]) -> str:
     if not m:
         return value
     tokens: List[str] = []
-    pos = m.start()
-    for i in range(1, (m.lastindex or 0) + 1):
-        literal = value[pos:m.start(i)]
-        if literal:
-            tokens.append(literal)
-        tokens.append(m.group(i))
-        pos = m.end(i)
-    tail = value[pos:m.end()]
-    if tail:
-        tokens.append(tail)
+    if m.lastindex:
+        pos = m.start()
+        for i in range(1, (m.lastindex or 0) + 1):
+            literal = value[pos:m.start(i)]
+            if literal:
+                tokens.append(literal)
+            tokens.append(m.group(i))
+            pos = m.end(i)
+        tail = value[pos:m.end()]
+        if tail:
+            tokens.append(tail)
+    else:
+        span = value[m.start():m.end()]
+        tokens = [t for t in re.split(r"([a-zA-Z]+|\d+|\W)", span) if t]
     return "".join(tokens[i] for i in order if i < len(tokens))
 
 
