@@ -341,4 +341,6 @@ def test_update_example_box_formats_example_only(monkeypatch):
 
     # Context text should not be inserted in the new display
     assert ("insert", " bar", "context") not in actions
-    assert ("insert", "FOO BAR", None) in actions
+    # With a simple transform like 'upper', only the example text
+    # should be transformed, not the surrounding log line
+    assert ("insert", "FOO", None) in actions

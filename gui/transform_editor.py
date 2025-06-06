@@ -329,7 +329,12 @@ class TransformEditorDialog(tk.Toplevel):
                         line = line_text
                         break
 
-            transformed_line = apply_transform(line, spec)
+            # Basic format-only transforms should operate on the raw
+            # example text, while advanced token reordering may rely on
+            # surrounding context from the full log line.  Use the full
+            # line only when token_order is specified.
+            target = line if isinstance(spec, dict) and "token_order" in spec else ex
+            transformed_line = apply_transform(target, spec)
 
             # Only show the example before and after transformation.
             # Skip any surrounding log context for a cleaner display.
