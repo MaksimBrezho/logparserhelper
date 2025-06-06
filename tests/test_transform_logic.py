@@ -40,3 +40,12 @@ def test_apply_transform_dict_replace():
     }
     assert apply_transform('foo', spec) == 'BAR'
     assert apply_transform('baz', spec) == 'baz'
+
+
+def test_apply_transform_token_order():
+    spec = {
+        'format': 'none',
+        'regex': r'(\w+) (\w+) (\d+)',
+        'token_order': [2, 1, 0, 3, 4]
+    }
+    assert apply_transform('foo bar 123', spec) == 'bar foo 123'

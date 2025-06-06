@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 import re
-from typing import Any, Dict
+from typing import Any, Dict, List
 
 
 def _apply_basic_transform(value: str, transform: str) -> str:
@@ -22,10 +22,36 @@ def _apply_basic_transform(value: str, transform: str) -> str:
     return value
 
 
+def _reorder_tokens(value: str, regex: str, order: List[int]) -> str:
+    """Reorder regex-derived tokens according to the provided order."""
+    try:
+        pat = re.compile(regex)
+    except re.error:
+        return value
+    m = pat.search(value or "")
+    if not m:
+        return value
+    tokens: List[str] = []
+    pos = m.start()
+    for i in range(1, (m.lastindex or 0) + 1):
+        literal = value[pos:m.start(i)]
+        if literal:
+            tokens.append(literal)
+        tokens.append(m.group(i))
+        pos = m.end(i)
+    tail = value[pos:m.end()]
+    if tail:
+        tokens.append(tail)
+    return "".join(tokens[i] for i in order if i < len(tokens))
+
+
 def apply_transform(value: str, transform: Any) -> str:
     """Apply a basic or advanced transformation."""
     if isinstance(transform, dict):
         fmt = transform.get("format", "none")
+        if transform.get("token_order") and transform.get("regex"):
+            order = [int(i) for i in transform.get("token_order", [])]
+            value = _reorder_tokens(value, transform["regex"], order)
         if transform.get("replace_pattern"):
             pat = re.compile(transform["replace_pattern"])
             if pat.fullmatch(value or ""):
