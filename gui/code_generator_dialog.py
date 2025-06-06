@@ -131,7 +131,7 @@ class CodeGeneratorDialog(tk.Toplevel):
         return ""
 
     def _find_examples(self, regex: str, max_lines: int = 5) -> list[str]:
-        """Return unique captured segments for the regex."""
+        """Return unique matched segments for the regex."""
         import re
 
         try:
@@ -146,13 +146,7 @@ class CodeGeneratorDialog(tk.Toplevel):
             if not m:
                 continue
 
-            if m.lastindex:
-                if m.lastindex == 1:
-                    value = m.group(1)
-                else:
-                    value = " ".join(m.group(i) for i in range(1, m.lastindex + 1))
-            else:
-                value = m.group(0)
+            value = m.group(0)
 
             if value not in seen:
                 seen.add(value)
