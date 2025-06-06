@@ -329,7 +329,7 @@ class TransformEditorDialog(tk.Toplevel):
                         line = line_text
                         break
 
-            transformed_line = apply_transform(line, spec)
+            transformed_part = apply_transform(line, spec)
 
             if prefix:
                 self.example_box.insert("end", prefix, "context")
@@ -340,7 +340,7 @@ class TransformEditorDialog(tk.Toplevel):
                 self.example_box.insert("end", suffix, "context")
 
             self.example_box.insert("end", " -> ")
-            self.example_box.insert("end", transformed_line)
+            self.example_box.insert("end", transformed_part)
             self.example_box.insert("end", "\n")
 
         self.example_box.config(state="disabled")
