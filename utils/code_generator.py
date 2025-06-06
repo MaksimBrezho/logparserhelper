@@ -32,9 +32,10 @@ def generate_files(header: Dict[str, str], mappings: List[Dict], patterns: List[
     mapping_repr = "[\n" + ",\n".join(
         "    {" + ", ".join([
             f"'cef': '{m['cef']}'",
-            f"'pattern': '{m['pattern']}'",
+            f"'pattern': '{m.get('pattern', '')}'",
             f"'group': {int(m.get('group', 0))}",
-            f"'transform': '{m.get('transform', 'none')}'"
+            f"'transform': '{m.get('transform', 'none')}'",
+            f"'value': '{m.get('value', '')}'",
         ]) + "}" for m in mappings) + "\n]"
 
     converter_code = f"""
@@ -51,8 +52,11 @@ class LogToCEFConverter:
         matches = {{name: rgx.search(line) for name, rgx in self.compiled_patterns.items()}}
         fields = {{}}
         for m in self.mappings:
-            match = matches.get(m['pattern'])
-            value = match.group(m['group']) if match else ''
+            if m.get('pattern'):
+                match = matches.get(m['pattern'])
+                value = match.group(m['group']) if match else ''
+            else:
+                value = m.get('value', '')
             fields[m['cef']] = apply_transform(value, m['transform'])
         return self._build_cef_string(fields)
 

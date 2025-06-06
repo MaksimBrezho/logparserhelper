@@ -24,7 +24,7 @@ class CodeGeneratorDialog(tk.Toplevel):
         self.minsize(700, 500)
         self.per_log_patterns = per_log_patterns or []
         self.logs = logs or []
-        self.mappings = []
+
 
         self.mappings = self._build_initial_mappings()
         self._build_ui()
@@ -51,6 +51,7 @@ class CodeGeneratorDialog(tk.Toplevel):
         entry = ttk.Entry(header, textvariable=self.header_vars["CEF Version"], state="disabled")
         entry.grid(row=0, column=1, sticky="ew", pady=2, padx=2)
         header.grid_columnconfigure(1, weight=1)
+
         self.mapping_frame = ttk.LabelFrame(self, text="Fields Auto-Mapped from Regex Patterns")
         self.mapping_frame.pack(fill="both", expand=True, padx=10, pady=5)
         self.mapping_list = ttk.Frame(self.mapping_frame)
@@ -80,16 +81,16 @@ class CodeGeneratorDialog(tk.Toplevel):
         for field in self.MANDATORY_FIELDS:
             names = by_field.get(field, [])
             if not names:
-                mappings.append({"cef": field, "pattern": "", "transform": "none"})
+                mappings.append({"cef": field, "pattern": "", "value": "", "transform": "none"})
             else:
                 for n in names:
-                    mappings.append({"cef": field, "pattern": n, "transform": "none"})
+                    mappings.append({"cef": field, "pattern": n, "value": "", "transform": "none"})
 
         for field, names in by_field.items():
             if field in self.MANDATORY_FIELDS:
                 continue
             for n in names:
-                mappings.append({"cef": field, "pattern": n, "transform": "none"})
+                mappings.append({"cef": field, "pattern": n, "value": "", "transform": "none"})
 
         return mappings
 
@@ -142,12 +143,17 @@ class CodeGeneratorDialog(tk.Toplevel):
         field = self._choose_cef_field()
         if not field:
             return
-        self.mappings.append({"cef": field, "pattern": "", "transform": "none"})
+        self.mappings.append({"cef": field, "pattern": "", "value": "", "transform": "none"})
         self._refresh_mapping_list()
 
     def _on_pattern_changed(self, idx, var):
         self.mappings[idx]["pattern"] = var.get()
+        if var.get():
+            self.mappings[idx]["value"] = ""
         self._refresh_mapping_list()
+
+    def _on_value_changed(self, idx, var):
+        self.mappings[idx]["value"] = var.get()
 
     def _on_edit_transform(self, idx):
         m = self.mappings[idx]
@@ -159,11 +165,14 @@ class CodeGeneratorDialog(tk.Toplevel):
             self._refresh_mapping_list()
 
     def _gather_mappings(self):
-        return [
-            {"cef": m["cef"], "pattern": m["pattern"], "group": 0, "transform": m["transform"]}
-            for m in self.mappings
-            if m["pattern"]
-        ]
+        result = []
+        for m in self.mappings:
+            if m.get("pattern"):
+                result.append({"cef": m["cef"], "pattern": m["pattern"], "group": 0, "transform": m["transform"]})
+            elif m.get("value"):
+                result.append({"cef": m["cef"], "value": m["value"], "transform": m["transform"]})
+        return result
+
 
     # ------------------------------------------------------------------
     def _on_preview(self):
@@ -211,23 +220,31 @@ class CodeGeneratorDialog(tk.Toplevel):
 
         pattern_map = {p["name"]: p for p in self._collect_patterns()}
         all_names = list(pattern_map.keys())
+
         counts = {}
         for m in self.mappings:
             counts[m["cef"]] = counts.get(m["cef"], 0) + 1
         used = {}
 
         for idx, m in enumerate(self.mappings, start=1):
-            regex = pattern_map.get(m["pattern"], {}).get("regex", "")
-            example = self._find_example(regex)
+            regex = pattern_map.get(m.get("pattern"), {}).get("regex", "")
+            example = self._find_example(regex) if regex else ""
+
             label = m["cef"]
             if counts.get(label, 0) > 1:
                 used[label] = used.get(label, 0) + 1
                 label = f"{label} {used[label]}"
             ttk.Label(self.mapping_list, text=label).grid(row=idx, column=0, sticky="w", padx=2)
-            var = tk.StringVar(value=m["pattern"])
-            combo = ttk.Combobox(self.mapping_list, values=all_names, textvariable=var, state="readonly")
-            combo.grid(row=idx, column=1, sticky="ew", padx=2)
-            combo.bind("<<ComboboxSelected>>", lambda e, i=idx-1, v=var: self._on_pattern_changed(i, v))
+            if m.get("pattern"):
+                var = tk.StringVar(value=m["pattern"])
+                combo = ttk.Combobox(self.mapping_list, values=all_names, textvariable=var, state="readonly")
+                combo.grid(row=idx, column=1, sticky="ew", padx=2)
+                combo.bind("<<ComboboxSelected>>", lambda e, i=idx-1, v=var: self._on_pattern_changed(i, v))
+            else:
+                var = tk.StringVar(value=m.get("value", ""))
+                entry = ttk.Entry(self.mapping_list, textvariable=var)
+                entry.grid(row=idx, column=1, sticky="ew", padx=2)
+                entry.bind("<KeyRelease>", lambda e, i=idx-1, v=var: self._on_value_changed(i, v))
             ttk.Label(self.mapping_list, text=regex).grid(row=idx, column=2, sticky="w", padx=2)
             ttk.Button(self.mapping_list, text=m["transform"], command=lambda i=idx-1: self._on_edit_transform(i)).grid(row=idx, column=3, sticky="w", padx=2)
             ttk.Label(self.mapping_list, text=example).grid(row=idx, column=4, sticky="w", padx=2)
