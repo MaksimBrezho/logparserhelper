@@ -304,9 +304,40 @@ class TransformEditorDialog(tk.Toplevel):
         spec = self._get_spec()
         self.example_box.config(state="normal")
         self.example_box.delete("1.0", "end")
+        if self.regex:
+            import re
+
+            try:
+                pat = re.compile(self.regex)
+            except re.error:
+                pat = None
+        else:
+            pat = None
+
+        self.example_box.tag_configure("context", foreground="gray")
+
         for ex in self.examples:
             transformed = apply_transform(ex, spec)
-            self.example_box.insert("end", f"{ex} -> {transformed}\n")
+
+            prefix = ""
+            suffix = ""
+            if pat and self.logs:
+                for line in self.logs:
+                    m = pat.search(line)
+                    if m and m.group(0) == ex:
+                        prefix = line[: m.start()]
+                        suffix = line[m.end() :]
+                        break
+
+            if prefix:
+                self.example_box.insert("end", prefix, "context")
+            self.example_box.insert("end", ex)
+            if suffix:
+                self.example_box.insert("end", suffix, "context")
+            self.example_box.insert("end", " -> ")
+            self.example_box.insert("end", transformed)
+            self.example_box.insert("end", "\n")
+
         self.example_box.config(state="disabled")
 
     def _on_save(self):
