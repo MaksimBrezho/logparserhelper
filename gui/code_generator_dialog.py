@@ -130,6 +130,22 @@ class CodeGeneratorDialog(tk.Toplevel):
                 return m.group(0)
         return ""
 
+    def _find_examples(self, regex: str, max_lines: int = 5) -> list[str]:
+        import re
+
+        try:
+            pat = re.compile(regex)
+        except re.error:
+            return []
+
+        result = []
+        for line in self.logs:
+            if pat.search(line):
+                result.append(line.strip())
+                if len(result) >= max_lines:
+                    break
+        return result
+
     def _choose_cef_field(self):
         keys = json_utils.load_cef_field_keys()
         if not keys:
@@ -169,7 +185,10 @@ class CodeGeneratorDialog(tk.Toplevel):
 
     def _on_edit_transform(self, idx):
         m = self.mappings[idx]
-        dlg = TransformEditorDialog(self, m["cef"], current=m["transform"])
+        pattern_map = {p["name"]: p for p in self._collect_patterns()}
+        regex = pattern_map.get(m.get("pattern"), {}).get("regex", "")
+        examples = self._find_examples(regex) if regex else []
+        dlg = TransformEditorDialog(self, m["cef"], current=m["transform"], regex=regex, examples=examples)
         dlg.grab_set()
         self.wait_window(dlg)
         if dlg.result is not None:

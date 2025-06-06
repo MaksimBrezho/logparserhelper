@@ -13,11 +13,26 @@ class TransformEditorDialog(tk.Toplevel):
         ("sentence", "Sentence case"),
     ]
 
-    def __init__(self, parent, cef_field: str, current: object = "none"):
+    def __init__(self, parent, cef_field: str, current: object = "none", *, regex: str = "", examples: list[str] | None = None):
         super().__init__(parent)
         self.result = None
         self.title(f"Transform Editor for CEF Field: {cef_field}")
-        self.minsize(300, 320)
+        self.minsize(300, 360)
+
+        if regex:
+            ttk.Label(self, text="Regex:").pack(anchor="w", padx=10, pady=(5, 0))
+            regex_box = tk.Text(self, height=1, width=40)
+            regex_box.insert("1.0", regex)
+            regex_box.config(state="disabled")
+            regex_box.pack(fill="x", padx=10)
+
+        if examples:
+            ttk.Label(self, text="Example lines:").pack(anchor="w", padx=10, pady=(5, 0))
+            ex_box = tk.Text(self, height=min(5, len(examples)), width=40)
+            for line in examples:
+                ex_box.insert("end", line + "\n")
+            ex_box.config(state="disabled")
+            ex_box.pack(fill="x", padx=10)
 
         if isinstance(current, dict):
             fmt = current.get("format", "none")
