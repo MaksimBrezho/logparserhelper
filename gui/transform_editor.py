@@ -50,6 +50,7 @@ class TransformEditorDialog(tk.Toplevel):
             self.example_box.pack(fill="x", padx=10)
             self.example_box.config(state="disabled")
 
+        token_order_current = None
         if isinstance(current, dict):
             fmt = current.get("format", "none")
             mapping_text = "\n".join(
@@ -57,6 +58,11 @@ class TransformEditorDialog(tk.Toplevel):
             )
             replace_pat = current.get("replace_pattern", "")
             replace_with = current.get("replace_with", "")
+            if current.get("token_order"):
+                try:
+                    token_order_current = [int(i) for i in current["token_order"]]
+                except Exception:
+                    token_order_current = None
         else:
             fmt = str(current)
             mapping_text = ""
@@ -112,6 +118,9 @@ class TransformEditorDialog(tk.Toplevel):
             chk.pack(anchor="w", padx=10, pady=(5, 0))
             self.token_adv_frame = ttk.Frame(self)
             self._init_token_editor()
+            if token_order_current is not None and len(token_order_current) == len(self.tokens):
+                self.token_order = token_order_current
+                self._refresh_token_list()
             self._toggle_token_editor()
 
         btns = ttk.Frame(self)
