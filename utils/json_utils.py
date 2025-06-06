@@ -6,6 +6,9 @@ logger = logging.getLogger(__name__)
 
 # Папка для пользовательских файлов
 USER_DATA_DIR = os.path.join("data", "user")
+os.makedirs(USER_DATA_DIR, exist_ok=True)
+
+CONVERSION_CONFIG_PATH = os.path.join(USER_DATA_DIR, "conversion_config.json")
 
 USER_PATTERNS_PATH = os.path.join(USER_DATA_DIR, "patterns_user.json")
 BUILTIN_PATTERNS_PATH = os.path.join("data", "patterns_builtin.json")
@@ -205,3 +208,25 @@ def load_cef_fields():
 def load_cef_field_keys():
     """Возвращает список ключей CEF-полей."""
     return [fld.get("key") for fld in load_cef_fields() if "key" in fld]
+
+
+def load_conversion_config() -> dict:
+    """Load converter configuration."""
+    try:
+        with open(CONVERSION_CONFIG_PATH, "r", encoding="utf-8") as f:
+            data = json.load(f)
+            header = data.get("header", {})
+            mappings = data.get("mappings", [])
+            return {"header": header, "mappings": mappings}
+    except (FileNotFoundError, json.JSONDecodeError):
+        return {"header": {}, "mappings": []}
+
+
+def save_conversion_config(data: dict):
+    """Save converter configuration."""
+    try:
+        os.makedirs(os.path.dirname(CONVERSION_CONFIG_PATH), exist_ok=True)
+        with open(CONVERSION_CONFIG_PATH, "w", encoding="utf-8") as f:
+            json.dump(data, f, indent=4, ensure_ascii=False)
+    except Exception as e:
+        logger.error("[Ошибка сохранения конвертер-конфига] %s", e)
