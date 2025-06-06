@@ -1,5 +1,5 @@
 import os
-from importlib.machinery import SourceFileLoader
+import importlib.util
 
 from utils.code_generator import generate_files
 
@@ -29,8 +29,9 @@ def test_generate_files_and_converter(tmp_path):
     conv_path = os.path.join(tmp_path, 'cef_converter.py')
     assert conv_path in paths
 
-    loader = SourceFileLoader('cef_converter', conv_path)
-    module = loader.load_module()
+    spec = importlib.util.spec_from_file_location('cef_converter', conv_path)
+    module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(module)
     conv = module.LogToCEFConverter()
     result = conv.convert_line('user=john')
     assert 'ACME' in result and 'JOHN' in result
@@ -46,8 +47,9 @@ def test_generate_files_constant_value(tmp_path):
     }]
 
     paths = generate_files(header, mappings, patterns, tmp_path)
-    loader = SourceFileLoader('cef_converter', paths[0])
-    module = loader.load_module()
+    spec = importlib.util.spec_from_file_location('cef_converter', paths[0])
+    module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(module)
     conv = module.LogToCEFConverter()
     result = conv.convert_line('line')
     assert 'deviceVendor=ACME' in result
@@ -93,8 +95,9 @@ def test_generate_files_advanced(tmp_path):
     ]
 
     paths = generate_files(header, mappings, patterns, tmp_path)
-    loader = SourceFileLoader('cef_converter', paths[0])
-    module = loader.load_module()
+    spec = importlib.util.spec_from_file_location('cef_converter', paths[0])
+    module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(module)
     conv = module.LogToCEFConverter()
     line = 'full=john doe sev=error status=unknown'
     result = conv.convert_line(line)
@@ -119,8 +122,9 @@ def test_generate_files_value_map_substring(tmp_path):
     ]
 
     paths = generate_files(header, mappings, patterns, tmp_path)
-    loader = SourceFileLoader('cef_converter', paths[0])
-    module = loader.load_module()
+    spec = importlib.util.spec_from_file_location('cef_converter', paths[0])
+    module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(module)
     conv = module.LogToCEFConverter()
     line = 'msg=Info: ERROR and more'
     result = conv.convert_line(line)
