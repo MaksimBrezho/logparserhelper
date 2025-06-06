@@ -34,6 +34,7 @@ class TransformEditorDialog(tk.Toplevel):
         self.regex = regex
         self.tokens = []
         self.token_order = []
+        self.show_token_editor = tk.BooleanVar(value=False)
         if regex:
             ttk.Label(self, text="Regex:").pack(anchor="w", padx=10, pady=(5, 0))
             regex_box = tk.Text(self, height=1, width=40)
@@ -102,7 +103,16 @@ class TransformEditorDialog(tk.Toplevel):
         rep_frame.grid_columnconfigure(1, weight=1)
 
         if self.regex:
+            chk = ttk.Checkbutton(
+                self,
+                text="Show advanced token options",
+                variable=self.show_token_editor,
+                command=self._toggle_token_editor,
+            )
+            chk.pack(anchor="w", padx=10, pady=(5, 0))
+            self.token_adv_frame = ttk.Frame(self)
             self._init_token_editor()
+            self._toggle_token_editor()
 
         btns = ttk.Frame(self)
         btns.pack(pady=10)
@@ -157,13 +167,14 @@ class TransformEditorDialog(tk.Toplevel):
         self.token_order = list(range(len(tokens)))
 
         frame = ttk.LabelFrame(
-            self, text="Reorder tokens (drag to move, Del to remove)"
+            self.token_adv_frame, text="Reorder tokens (drag to move, Del to remove)"
         )
-        frame.pack(fill="x", padx=10, pady=(5, 0))
+        frame.pack(fill="x")
         self.token_frame = ttk.Frame(frame)
         self.token_frame.pack(fill="x")
         self.token_widgets: list[ttk.Label] = []
         self._refresh_token_list()
+        ttk.Button(frame, text="Reset", command=self._reset_tokens).pack(anchor="e", padx=5, pady=(0, 5))
 
     def _refresh_token_list(self):
         if not hasattr(self, "token_frame"):
@@ -234,6 +245,20 @@ class TransformEditorDialog(tk.Toplevel):
         widget.destroy()
         self._refresh_token_list()
         self._update_example_box()
+
+    def _reset_tokens(self):
+        """Reset token order to the original state."""
+        self.token_order = list(range(len(self.tokens)))
+        self._refresh_token_list()
+        self._update_example_box()
+
+    def _toggle_token_editor(self):
+        if not hasattr(self, "token_adv_frame"):
+            return
+        if self.show_token_editor.get():
+            self.token_adv_frame.pack(fill="x", padx=10, pady=(0, 5))
+        else:
+            self.token_adv_frame.forget()
 
     @staticmethod
     def _parse_mapping(text: str) -> dict:
