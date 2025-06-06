@@ -51,6 +51,7 @@ def test_initial_mappings_from_fields(monkeypatch):
         {"name": "Time Range", "regex": "bar", "fields": ["start", "end"]},
     ]
 
+    dlg.per_log_patterns = patterns
     monkeypatch.setattr(CodeGeneratorDialog, "_collect_patterns", lambda self: patterns)
     monkeypatch.setattr(json_utils, "load_cef_field_keys", lambda: ["start", "end"])
 

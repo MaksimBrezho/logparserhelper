@@ -66,7 +66,8 @@ class CodeGeneratorDialog(tk.Toplevel):
         self._refresh_mapping_list()
 
     def _build_initial_mappings(self):
-        patterns = self._collect_patterns()
+        # Only consider patterns that are present for this log file
+        patterns = list(self.per_log_patterns)
         cef_keys = set(json_utils.load_cef_field_keys())
 
         by_field = {}
