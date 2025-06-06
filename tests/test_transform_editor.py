@@ -87,6 +87,7 @@ def test_init_token_editor_sets_tokens(monkeypatch):
 
     monkeypatch.setattr(ttk, 'Label', DummyWidget)
     monkeypatch.setattr(ttk, 'Frame', DummyWidget)
+    monkeypatch.setattr(ttk, 'LabelFrame', DummyWidget)
     monkeypatch.setattr(tk, 'Listbox', DummyWidget)
     monkeypatch.setattr(ttk, 'Scrollbar', DummyWidget)
     monkeypatch.setattr(TransformEditorDialog, '_refresh_token_list', lambda self: None)
