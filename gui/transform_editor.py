@@ -230,6 +230,7 @@ class TransformEditorDialog(tk.Toplevel):
             for widget in self.token_widgets:
                 widget.pack_forget()
                 widget.pack(side="left", padx=2, pady=2)
+            self._update_example_box()
 
     def _on_drag_stop(self, event):
         self._drag_widget = None
