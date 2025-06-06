@@ -13,6 +13,13 @@ def test_find_example():
     assert dlg._find_example(r"error") == "error"
 
 
+def test_find_examples():
+    dlg = CodeGeneratorDialog.__new__(CodeGeneratorDialog)
+    dlg.logs = ["user=john", "user=jane", "something else"]
+    result = dlg._find_examples(r"user=(\w+)")
+    assert result == ["john", "jane"]
+
+
 def test_initial_mappings_duplicate(monkeypatch):
     dlg = CodeGeneratorDialog.__new__(CodeGeneratorDialog)
     dlg.per_log_patterns = [
