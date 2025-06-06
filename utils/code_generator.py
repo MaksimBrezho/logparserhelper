@@ -15,7 +15,16 @@ def generate_files(header: Dict[str, str], mappings: List[Dict], patterns: List[
     header : dict
         Values for CEF header fields.
     mappings : list of dict
-        Mapping definitions: {'cef': key, 'pattern': pattern_name, 'group': int, 'transform': str}
+        Mapping definitions. Supported keys:
+        - 'cef': target CEF field name
+        - 'pattern': source pattern name
+        - 'group': capture group number (optional)
+        - 'groups': list of capture groups to combine (optional)
+        - 'transform': transformation definition
+        - 'value': constant value if no pattern
+        - 'value_map': mapping of values
+        - 'replace_pattern': regex for replacement check
+        - 'replace_with': replacement value
     patterns : list of dict
         Available patterns with 'name' and 'regex'.
     output_dir : str
@@ -30,13 +39,8 @@ def generate_files(header: Dict[str, str], mappings: List[Dict], patterns: List[
     pattern_repr = "{\n" + ",\n".join(
         f"    '{p['name']}': re.compile(r'''{p['regex']}''')" for p in patterns) + "\n}"
     mapping_repr = "[\n" + ",\n".join(
-        "    {" + ", ".join([
-            f"'cef': '{m['cef']}'",
-            f"'pattern': '{m.get('pattern', '')}'",
-            f"'group': {int(m.get('group', 0))}",
-            f"'transform': '{m.get('transform', 'none')}'",
-            f"'value': '{m.get('value', '')}'",
-        ]) + "}" for m in mappings) + "\n]"
+        "    " + repr(m) for m in mappings
+    ) + "\n]"
 
     converter_code = f"""
 import re
@@ -54,10 +58,24 @@ class LogToCEFConverter:
         for m in self.mappings:
             if m.get('pattern'):
                 match = matches.get(m['pattern'])
-                value = match.group(m['group']) if match else ''
+                if match:
+                    if 'groups' in m:
+                        parts = [match.group(g) for g in m['groups']]
+                        value = ' '.join(parts)
+                    else:
+                        value = match.group(m.get('group', 0))
+                else:
+                    value = ''
             else:
                 value = m.get('value', '')
-            fields[m['cef']] = apply_transform(value, m['transform'])
+
+            if m.get('replace_pattern'):
+                if re.fullmatch(m['replace_pattern'], value):
+                    value = m.get('replace_with', '')
+            if m.get('value_map'):
+                value = m['value_map'].get(value, value)
+
+            fields[m['cef']] = apply_transform(value, m.get('transform', 'none'))
         return self._build_cef_string(fields)
 
     def _build_cef_string(self, fields: dict) -> str:

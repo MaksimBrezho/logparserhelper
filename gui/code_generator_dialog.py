@@ -258,7 +258,8 @@ class CodeGeneratorDialog(tk.Toplevel):
                 entry.grid(row=idx, column=1, sticky="ew", padx=2)
                 entry.bind("<KeyRelease>", lambda e, i=idx-1, v=var: self._on_value_changed(i, v))
             ttk.Label(self.mapping_list, text=regex).grid(row=idx, column=2, sticky="w", padx=2)
-            ttk.Button(self.mapping_list, text=m["transform"], command=lambda i=idx-1: self._on_edit_transform(i)).grid(row=idx, column=3, sticky="w", padx=2)
+            btn_text = m["transform"] if isinstance(m.get("transform"), str) else "custom"
+            ttk.Button(self.mapping_list, text=btn_text, command=lambda i=idx-1: self._on_edit_transform(i)).grid(row=idx, column=3, sticky="w", padx=2)
             ttk.Label(self.mapping_list, text=example).grid(row=idx, column=4, sticky="w", padx=2)
 
         self.mapping_list.grid_columnconfigure(1, weight=1)
