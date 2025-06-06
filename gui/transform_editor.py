@@ -114,9 +114,8 @@ class TransformEditorDialog(tk.Toplevel):
         self.tokens = tokens
         self.token_order = list(range(len(tokens)))
 
-        ttk.Label(self, text="Reorder tokens (drag to move, Del to remove):").pack(anchor="w", padx=10, pady=(5, 0))
-        frame = ttk.Frame(self)
-        frame.pack(fill="x", padx=10)
+        frame = ttk.LabelFrame(self, text="Reorder tokens (drag to move, Del to remove)")
+        frame.pack(fill="x", padx=10, pady=(5, 0))
         self.token_list = tk.Listbox(frame, selectmode="browse", height=min(5, len(tokens)))
         self._refresh_token_list()
         self.token_list.pack(side="left", fill="both", expand=True)

@@ -1,5 +1,7 @@
 import sys
 import os
+import tkinter as tk
+from tkinter import ttk
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 
 from gui.transform_editor import TransformEditorDialog
@@ -61,3 +63,36 @@ def test_get_spec_token_order():
         'token_order': [1, 0],
         'regex': r'(\w+) (\w+)'
     }
+
+
+def test_init_token_editor_sets_tokens(monkeypatch):
+    dlg = TransformEditorDialog.__new__(TransformEditorDialog)
+    dlg.regex = r'user=(\w+)'
+    dlg.examples = ['user=jane']
+
+    # Avoid actual tkinter widgets
+    class DummyWidget:
+        def __init__(self, *a, **k):
+            pass
+        def pack(self, *a, **k):
+            pass
+        def bind(self, *a, **k):
+            pass
+        def config(self, *a, **k):
+            pass
+        def yview(self, *a, **k):
+            pass
+        def set(self, *a, **k):
+            pass
+
+    monkeypatch.setattr(ttk, 'Label', DummyWidget)
+    monkeypatch.setattr(ttk, 'Frame', DummyWidget)
+    monkeypatch.setattr(ttk, 'LabelFrame', DummyWidget)
+    monkeypatch.setattr(tk, 'Listbox', DummyWidget)
+    monkeypatch.setattr(ttk, 'Scrollbar', DummyWidget)
+    monkeypatch.setattr(TransformEditorDialog, '_refresh_token_list', lambda self: None)
+
+    TransformEditorDialog._init_token_editor(dlg)
+
+    assert dlg.tokens == ['user=', 'jane']
+    assert dlg.token_order == [0, 1]
