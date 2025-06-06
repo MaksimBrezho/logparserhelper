@@ -235,3 +235,38 @@ def test_drag_updates_example(monkeypatch):
     dlg._on_drag_motion(DummyEvent(widget=dlg.token_widgets[0], x_root=50))
 
     assert called.get('hit')
+
+
+def test_update_example_box_shows_context(monkeypatch):
+    dlg = TransformEditorDialog.__new__(TransformEditorDialog)
+
+    dlg.regex = r"[a-zA-Z]+ {1,2}\d{1,2}\ \d{2}:\d{2}:\d{2}(?= combo)"
+    dlg.examples = ["Jun 14 15:16:01"]
+    dlg.logs = ["Jun 14 15:16:01 combo"]
+    dlg.var = DummyVar("none")
+    dlg.map_text = DummyText("")
+    dlg.replace_pattern_var = DummyVar("")
+    dlg.replace_with_var = DummyVar("")
+    dlg.token_order = []
+    dlg.tokens = []
+
+    actions = []
+
+    class DummyBox:
+        def config(self, **k):
+            actions.append(("config", k))
+
+        def delete(self, *a):
+            actions.append(("delete", a))
+
+        def insert(self, index, text, tag=None):
+            actions.append(("insert", text, tag))
+
+        def tag_configure(self, tag, **opts):
+            actions.append(("tag", tag, opts))
+
+    dlg.example_box = DummyBox()
+
+    TransformEditorDialog._update_example_box(dlg)
+
+    assert ("insert", " combo", "context") in actions
