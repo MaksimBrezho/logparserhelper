@@ -339,4 +339,4 @@ def test_update_example_box_formats_example_only(monkeypatch):
     TransformEditorDialog._update_example_box(dlg)
 
     assert ("insert", " bar", "context") in actions
-    assert ("insert", "FOO", None) in actions
+    assert ("insert", "FOO BAR", None) in actions
