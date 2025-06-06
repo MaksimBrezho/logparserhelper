@@ -1,7 +1,4 @@
-import os
-import sys
 from typing import List, Dict
-sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 
 from utils.text_utils import compute_char_coverage
 

@@ -1,11 +1,8 @@
-import os
-import sys
 import json
 import re
 import math
 import tempfile
 
-sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 
 from utils import json_utils, color_utils, text_utils
 from core.tokenizer.tree_tokenizer import build_token_tree, flatten_token_tree

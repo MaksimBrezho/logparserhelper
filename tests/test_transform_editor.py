@@ -1,9 +1,6 @@
-import sys
-import os
 import tkinter as tk
 from tkinter import ttk
 
-sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
 
 from gui.transform_editor import TransformEditorDialog
 
