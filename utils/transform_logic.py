@@ -15,7 +15,8 @@ def _apply_basic_transform(value: str, transform: str) -> str:
     if transform == "upper":
         return value.upper()
     if transform == "capitalize":
-        return value.capitalize()
+        # Capitalize each word rather than just the first character
+        return value.title()
     if transform == "sentence":
         return value[:1].upper() + value[1:].lower() if value else value
     return value
