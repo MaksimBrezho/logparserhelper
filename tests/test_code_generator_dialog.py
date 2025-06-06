@@ -42,3 +42,23 @@ def test_dialog_init_no_duplicate(monkeypatch):
     dv = [m for m in dlg.mappings if m["cef"] == "deviceVendor"]
     assert len(dv) == 1
 
+
+def test_initial_mappings_from_fields(monkeypatch):
+    dlg = CodeGeneratorDialog.__new__(CodeGeneratorDialog)
+
+    patterns = [
+        {"name": "Date L", "regex": "foo", "fields": ["start"]},
+        {"name": "Time Range", "regex": "bar", "fields": ["start", "end"]},
+    ]
+
+    monkeypatch.setattr(CodeGeneratorDialog, "_collect_patterns", lambda self: patterns)
+    monkeypatch.setattr(json_utils, "load_cef_field_keys", lambda: ["start", "end"])
+
+    mappings = CodeGeneratorDialog._build_initial_mappings(dlg)
+    start = [m["pattern"] for m in mappings if m["cef"] == "start"]
+    end = [m["pattern"] for m in mappings if m["cef"] == "end"]
+
+    assert start.count("Date L") == 1
+    assert start.count("Time Range") == 1
+    assert end == ["Time Range"]
+
