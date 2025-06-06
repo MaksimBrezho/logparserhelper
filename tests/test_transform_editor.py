@@ -269,7 +269,8 @@ def test_update_example_box_shows_context(monkeypatch):
 
     TransformEditorDialog._update_example_box(dlg)
 
-    assert ("insert", " combo", "context") in actions
+    # No context should be displayed in the example output
+    assert ("insert", " combo", "context") not in actions
 
 
 def test_update_example_box_reorders_with_lookahead(monkeypatch):
@@ -338,5 +339,8 @@ def test_update_example_box_formats_example_only(monkeypatch):
 
     TransformEditorDialog._update_example_box(dlg)
 
-    assert ("insert", " bar", "context") in actions
-    assert ("insert", "FOO BAR", None) in actions
+    # Context text should not be inserted in the new display
+    assert ("insert", " bar", "context") not in actions
+    # With a simple transform like 'upper', only the example text
+    # should be transformed, not the surrounding log line
+    assert ("insert", "FOO", None) in actions
