@@ -94,6 +94,8 @@ def test_init_token_editor_sets_tokens(monkeypatch):
     monkeypatch.setattr(ttk, "Label", DummyWidget)
     monkeypatch.setattr(ttk, "Frame", DummyWidget)
     monkeypatch.setattr(ttk, "LabelFrame", DummyWidget)
+    monkeypatch.setattr(ttk, "Button", DummyWidget)
+    dlg.token_adv_frame = DummyWidget()
     monkeypatch.setattr(TransformEditorDialog, "_refresh_token_list", lambda self: None)
 
     TransformEditorDialog._init_token_editor(dlg)
@@ -120,9 +122,43 @@ def test_init_token_editor_split_on_no_groups(monkeypatch):
     monkeypatch.setattr(ttk, "Label", DummyWidget)
     monkeypatch.setattr(ttk, "Frame", DummyWidget)
     monkeypatch.setattr(ttk, "LabelFrame", DummyWidget)
+    monkeypatch.setattr(ttk, "Button", DummyWidget)
+    dlg.token_adv_frame = DummyWidget()
     monkeypatch.setattr(TransformEditorDialog, "_refresh_token_list", lambda self: None)
 
     TransformEditorDialog._init_token_editor(dlg)
 
     assert dlg.tokens == ["01", "/", "02", "/", "2024"]
     assert dlg.token_order == [0, 1, 2, 3, 4]
+
+
+def test_reset_tokens(monkeypatch):
+    dlg = TransformEditorDialog.__new__(TransformEditorDialog)
+    dlg.tokens = ["a", "b", "c"]
+    dlg.token_order = [2, 1]
+    dlg.token_adv_frame = None
+    monkeypatch.setattr(TransformEditorDialog, "_refresh_token_list", lambda s: setattr(s, "called", True))
+    dlg._update_example_box = lambda: None
+    TransformEditorDialog._reset_tokens(dlg)
+    assert dlg.token_order == [0, 1, 2]
+    assert dlg.called
+
+
+def test_toggle_token_editor(monkeypatch):
+    dlg = TransformEditorDialog.__new__(TransformEditorDialog)
+
+    class DummyFrame:
+        def __init__(self):
+            self.visible = False
+        def pack(self, *a, **k):
+            self.visible = True
+        def forget(self):
+            self.visible = False
+
+    dlg.token_adv_frame = DummyFrame()
+    dlg.show_token_editor = DummyVar(True)
+    TransformEditorDialog._toggle_token_editor(dlg)
+    assert dlg.token_adv_frame.visible
+    dlg.show_token_editor.set(False)
+    TransformEditorDialog._toggle_token_editor(dlg)
+    assert not dlg.token_adv_frame.visible
