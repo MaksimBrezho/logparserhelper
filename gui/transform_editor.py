@@ -34,6 +34,7 @@ class TransformEditorDialog(tk.Toplevel):
         self.regex = regex
         self.tokens = []
         self.token_order = []
+        self.show_token_editor = tk.BooleanVar(value=False)
         if regex:
             ttk.Label(self, text="Regex:").pack(anchor="w", padx=10, pady=(5, 0))
             regex_box = tk.Text(self, height=1, width=40)
@@ -102,7 +103,16 @@ class TransformEditorDialog(tk.Toplevel):
         rep_frame.grid_columnconfigure(1, weight=1)
 
         if self.regex:
+            chk = ttk.Checkbutton(
+                self,
+                text="Show advanced token options",
+                variable=self.show_token_editor,
+                command=self._toggle_token_editor,
+            )
+            chk.pack(anchor="w", padx=10, pady=(5, 0))
+            self.token_adv_frame = ttk.Frame(self)
             self._init_token_editor()
+            self._toggle_token_editor()
 
         btns = ttk.Frame(self)
         btns.pack(pady=10)
@@ -157,13 +167,14 @@ class TransformEditorDialog(tk.Toplevel):
         self.token_order = list(range(len(tokens)))
 
         frame = ttk.LabelFrame(
-            self, text="Reorder tokens (drag to move, Del to remove)"
+            self.token_adv_frame, text="Reorder tokens (drag to move, Del to remove)"
         )
-        frame.pack(fill="x", padx=10, pady=(5, 0))
+        frame.pack(fill="x")
         self.token_frame = ttk.Frame(frame)
         self.token_frame.pack(fill="x")
         self.token_widgets: list[ttk.Label] = []
         self._refresh_token_list()
+        ttk.Button(frame, text="Reset", command=self._reset_tokens).pack(anchor="e", padx=5, pady=(0, 5))
 
     def _refresh_token_list(self):
         if not hasattr(self, "token_frame"):
@@ -198,7 +209,8 @@ class TransformEditorDialog(tk.Toplevel):
         if not hasattr(self, "_drag_widget") or self._drag_widget is None:
             return
         x = event.x_root - self.token_frame.winfo_rootx()
-        new_index = len(self.token_widgets) - 1
+        # allow inserting after the last element
+        new_index = len(self.token_widgets)
         for i, w in enumerate(self.token_widgets):
             if w is self._drag_widget:
                 continue
@@ -213,7 +225,11 @@ class TransformEditorDialog(tk.Toplevel):
             self.token_widgets.insert(new_index, w)
             self.token_order = [wid.token_idx for wid in self.token_widgets]
             self._drag_index = new_index
-            self._refresh_token_list()
+            # Repack existing widgets instead of recreating them to
+            # preserve the drag event bindings
+            for widget in self.token_widgets:
+                widget.pack_forget()
+                widget.pack(side="left", padx=2, pady=2)
 
     def _on_drag_stop(self, event):
         self._drag_widget = None
@@ -234,6 +250,20 @@ class TransformEditorDialog(tk.Toplevel):
         widget.destroy()
         self._refresh_token_list()
         self._update_example_box()
+
+    def _reset_tokens(self):
+        """Reset token order to the original state."""
+        self.token_order = list(range(len(self.tokens)))
+        self._refresh_token_list()
+        self._update_example_box()
+
+    def _toggle_token_editor(self):
+        if not hasattr(self, "token_adv_frame"):
+            return
+        if self.show_token_editor.get():
+            self.token_adv_frame.pack(fill="x", padx=10, pady=(0, 5))
+        else:
+            self.token_adv_frame.forget()
 
     @staticmethod
     def _parse_mapping(text: str) -> dict:
