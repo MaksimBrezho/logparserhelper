@@ -306,7 +306,6 @@ def test_update_example_box_reorders_with_lookahead(monkeypatch):
 
     assert ("insert", "14 15:16:01 Jun", None) in actions
 
-
 def test_update_example_box_formats_example_only(monkeypatch):
     dlg = TransformEditorDialog.__new__(TransformEditorDialog)
 

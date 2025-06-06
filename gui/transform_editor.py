@@ -333,12 +333,14 @@ class TransformEditorDialog(tk.Toplevel):
                 transformed_part = apply_transform(full_line, spec)
             else:
                 transformed_part = apply_transform(ex, spec)
-
             if prefix:
                 self.example_box.insert("end", prefix, "context")
             self.example_box.insert("end", ex)
+            self.example_box.insert("end", " -> ")
+            self.example_box.insert("end", transformed_part)
             if suffix:
                 self.example_box.insert("end", suffix, "context")
+
             self.example_box.insert("end", " -> ")
             self.example_box.insert("end", transformed_part)
             self.example_box.insert("end", "\n")
