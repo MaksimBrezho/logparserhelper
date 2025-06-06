@@ -1,6 +1,7 @@
 import tkinter as tk
 from tkinter import filedialog, messagebox, scrolledtext
 from gui.regex_editor import RegexEditor
+from gui.log_generator import LogGeneratorWindow
 import os
 
 from core.regex_highlighter import highlight_dates_in_text
@@ -25,6 +26,9 @@ class AppWindow(tk.Frame):
 
         edit_btn = tk.Button(btn_frame, text="Редактировать шаблоны", command=self.edit_patterns)
         edit_btn.pack(side="left", padx=5)
+
+        generate_btn = tk.Button(btn_frame, text="Генератор логов", command=self.open_generator)
+        generate_btn.pack(side="left", padx=5)
 
         # Текстовое поле с логами
         self.text_area = scrolledtext.ScrolledText(self, wrap="none", font=("Courier", 10))
@@ -54,3 +58,6 @@ class AppWindow(tk.Frame):
                 highlight_dates_in_text(self.text_area, self.patterns)
 
         RegexEditor(self.master, on_close_callback=on_close)
+
+    def open_generator(self):
+        LogGeneratorWindow(self.master)
