@@ -24,3 +24,21 @@ def test_initial_mappings_duplicate(monkeypatch):
     mappings = CodeGeneratorDialog._build_initial_mappings(dlg)
     dv = [m for m in mappings if m["cef"] == "deviceVendor"]
     assert len(dv) == 2
+
+
+def test_dialog_init_no_duplicate(monkeypatch):
+    patterns = [{"name": "deviceVendor", "regex": "foo"}]
+
+    monkeypatch.setattr(CodeGeneratorDialog, "_collect_patterns", lambda self: patterns)
+    monkeypatch.setattr(json_utils, "load_cef_field_keys", lambda: ["deviceVendor"])
+
+    monkeypatch.setattr(CodeGeneratorDialog, "_build_ui", lambda self: None)
+    dlg = CodeGeneratorDialog.__new__(CodeGeneratorDialog)
+    dlg.per_log_patterns = patterns
+    dlg.logs = []
+    dlg.mappings = CodeGeneratorDialog._build_initial_mappings(dlg)
+    CodeGeneratorDialog._build_ui(dlg)
+
+    dv = [m for m in dlg.mappings if m["cef"] == "deviceVendor"]
+    assert len(dv) == 1
+
