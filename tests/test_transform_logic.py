@@ -49,3 +49,12 @@ def test_apply_transform_token_order():
         'token_order': [2, 1, 0, 3, 4]
     }
     assert apply_transform('foo bar 123', spec) == 'bar foo 123'
+
+
+def test_reorder_tokens_no_groups():
+    spec = {
+        'format': 'none',
+        'regex': r'\d{2}/\d{2}/\d{4}',
+        'token_order': [4, 3, 2, 1, 0]
+    }
+    assert apply_transform('01/02/2024', spec) == '2024/02/01'

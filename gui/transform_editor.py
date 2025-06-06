@@ -138,16 +138,20 @@ class TransformEditorDialog(tk.Toplevel):
         value = line
 
         tokens = []
-        pos = m.start()
-        for i in range(1, (m.lastindex or 0) + 1):
-            literal = value[pos : m.start(i)]
-            if literal:
-                tokens.append(literal)
-            tokens.append(m.group(i))
-            pos = m.end(i)
-        tail = value[pos : m.end()]
-        if tail:
-            tokens.append(tail)
+        if m.lastindex:
+            pos = m.start()
+            for i in range(1, (m.lastindex or 0) + 1):
+                literal = value[pos : m.start(i)]
+                if literal:
+                    tokens.append(literal)
+                tokens.append(m.group(i))
+                pos = m.end(i)
+            tail = value[pos : m.end()]
+            if tail:
+                tokens.append(tail)
+        else:
+            span = value[m.start() : m.end()]
+            tokens = [t for t in re.split(r"([a-zA-Z]+|\d+|\W)", span) if t]
 
         self.tokens = tokens
         self.token_order = list(range(len(tokens)))

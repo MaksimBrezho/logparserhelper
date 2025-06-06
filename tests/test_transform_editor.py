@@ -100,3 +100,29 @@ def test_init_token_editor_sets_tokens(monkeypatch):
 
     assert dlg.tokens == ["user=", "jane"]
     assert dlg.token_order == [0, 1]
+
+
+def test_init_token_editor_split_on_no_groups(monkeypatch):
+    dlg = TransformEditorDialog.__new__(TransformEditorDialog)
+    dlg.regex = r"\d{2}/\d{2}/\d{4}"
+    dlg.examples = ["01/02/2024"]
+
+    class DummyWidget:
+        def __init__(self, *a, **k):
+            pass
+
+        def pack(self, *a, **k):
+            pass
+
+        def bind(self, *a, **k):
+            pass
+
+    monkeypatch.setattr(ttk, "Label", DummyWidget)
+    monkeypatch.setattr(ttk, "Frame", DummyWidget)
+    monkeypatch.setattr(ttk, "LabelFrame", DummyWidget)
+    monkeypatch.setattr(TransformEditorDialog, "_refresh_token_list", lambda self: None)
+
+    TransformEditorDialog._init_token_editor(dlg)
+
+    assert dlg.tokens == ["01", "/", "02", "/", "2024"]
+    assert dlg.token_order == [0, 1, 2, 3, 4]
