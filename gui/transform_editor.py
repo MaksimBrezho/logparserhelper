@@ -319,18 +319,20 @@ class TransformEditorDialog(tk.Toplevel):
         for ex in self.examples:
             prefix = ""
             suffix = ""
-            line = ex
+            full_line = ex
             if pat and self.logs:
                 for line_text in self.logs:
                     m = pat.search(line_text)
                     if m and m.group(0) == ex:
                         prefix = line_text[: m.start()]
                         suffix = line_text[m.end() :]
-                        line = line_text
+                        full_line = line_text
                         break
 
-            transformed_part = apply_transform(line, spec)
-
+            if "token_order" in spec:
+                transformed_part = apply_transform(full_line, spec)
+            else:
+                transformed_part = apply_transform(ex, spec)
             if prefix:
                 self.example_box.insert("end", prefix, "context")
             self.example_box.insert("end", ex)
@@ -341,7 +343,6 @@ class TransformEditorDialog(tk.Toplevel):
 
             self.example_box.insert("end", " -> ")
             self.example_box.insert("end", transformed_part)
-
             self.example_box.insert("end", "\n")
 
         self.example_box.config(state="disabled")

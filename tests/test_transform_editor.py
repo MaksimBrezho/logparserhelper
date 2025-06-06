@@ -305,3 +305,38 @@ def test_update_example_box_reorders_with_lookahead(monkeypatch):
     TransformEditorDialog._update_example_box(dlg)
 
     assert ("insert", "14 15:16:01 Jun", None) in actions
+
+def test_update_example_box_formats_example_only(monkeypatch):
+    dlg = TransformEditorDialog.__new__(TransformEditorDialog)
+
+    dlg.regex = r"foo(?= bar)"
+    dlg.examples = ["foo"]
+    dlg.logs = ["foo bar"]
+    dlg.var = DummyVar("upper")
+    dlg.map_text = DummyText("")
+    dlg.replace_pattern_var = DummyVar("")
+    dlg.replace_with_var = DummyVar("")
+    dlg.token_order = []
+    dlg.tokens = []
+
+    actions = []
+
+    class DummyBox:
+        def config(self, **k):
+            actions.append(("config", k))
+
+        def delete(self, *a):
+            actions.append(("delete", a))
+
+        def insert(self, index, text, tag=None):
+            actions.append(("insert", text, tag))
+
+        def tag_configure(self, tag, **opts):
+            actions.append(("tag", tag, opts))
+
+    dlg.example_box = DummyBox()
+
+    TransformEditorDialog._update_example_box(dlg)
+
+    assert ("insert", " bar", "context") in actions
+    assert ("insert", "FOO", None) in actions
