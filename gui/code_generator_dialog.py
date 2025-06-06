@@ -130,6 +130,37 @@ class CodeGeneratorDialog(tk.Toplevel):
                 return m.group(0)
         return ""
 
+    def _find_examples(self, regex: str, max_lines: int = 5) -> list[str]:
+        """Return unique captured segments for the regex."""
+        import re
+
+        try:
+            pat = re.compile(regex)
+        except re.error:
+            return []
+
+        result = []
+        seen = set()
+        for line in self.logs:
+            m = pat.search(line)
+            if not m:
+                continue
+
+            if m.lastindex:
+                if m.lastindex == 1:
+                    value = m.group(1)
+                else:
+                    value = " ".join(m.group(i) for i in range(1, m.lastindex + 1))
+            else:
+                value = m.group(0)
+
+            if value not in seen:
+                seen.add(value)
+                result.append(value)
+                if len(result) >= max_lines:
+                    break
+        return result
+
     def _choose_cef_field(self):
         keys = json_utils.load_cef_field_keys()
         if not keys:
@@ -169,7 +200,10 @@ class CodeGeneratorDialog(tk.Toplevel):
 
     def _on_edit_transform(self, idx):
         m = self.mappings[idx]
-        dlg = TransformEditorDialog(self, m["cef"], current=m["transform"])
+        pattern_map = {p["name"]: p for p in self._collect_patterns()}
+        regex = pattern_map.get(m.get("pattern"), {}).get("regex", "")
+        examples = self._find_examples(regex) if regex else []
+        dlg = TransformEditorDialog(self, m["cef"], current=m["transform"], regex=regex, examples=examples)
         dlg.grab_set()
         self.wait_window(dlg)
         if dlg.result is not None:
@@ -258,7 +292,8 @@ class CodeGeneratorDialog(tk.Toplevel):
                 entry.grid(row=idx, column=1, sticky="ew", padx=2)
                 entry.bind("<KeyRelease>", lambda e, i=idx-1, v=var: self._on_value_changed(i, v))
             ttk.Label(self.mapping_list, text=regex).grid(row=idx, column=2, sticky="w", padx=2)
-            ttk.Button(self.mapping_list, text=m["transform"], command=lambda i=idx-1: self._on_edit_transform(i)).grid(row=idx, column=3, sticky="w", padx=2)
+            btn_text = m["transform"] if isinstance(m.get("transform"), str) else "custom"
+            ttk.Button(self.mapping_list, text=btn_text, command=lambda i=idx-1: self._on_edit_transform(i)).grid(row=idx, column=3, sticky="w", padx=2)
             ttk.Label(self.mapping_list, text=example).grid(row=idx, column=4, sticky="w", padx=2)
 
         self.mapping_list.grid_columnconfigure(1, weight=1)
