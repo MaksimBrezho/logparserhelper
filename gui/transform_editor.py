@@ -1,6 +1,8 @@
 import tkinter as tk
 from tkinter import ttk
 
+from utils.transform_logic import apply_transform
+
 
 class TransformEditorDialog(tk.Toplevel):
     """Dialog for selecting a basic or advanced value transformation."""
@@ -18,7 +20,7 @@ class TransformEditorDialog(tk.Toplevel):
         self.result = None
         self.title(f"Transform Editor for CEF Field: {cef_field}")
         self.minsize(300, 360)
-
+        self.examples = examples or []
         if regex:
             ttk.Label(self, text="Regex:").pack(anchor="w", padx=10, pady=(5, 0))
             regex_box = tk.Text(self, height=1, width=40)
@@ -26,13 +28,11 @@ class TransformEditorDialog(tk.Toplevel):
             regex_box.config(state="disabled")
             regex_box.pack(fill="x", padx=10)
 
-        if examples:
-            ttk.Label(self, text="Example lines:").pack(anchor="w", padx=10, pady=(5, 0))
-            ex_box = tk.Text(self, height=min(5, len(examples)), width=40)
-            for line in examples:
-                ex_box.insert("end", line + "\n")
-            ex_box.config(state="disabled")
-            ex_box.pack(fill="x", padx=10)
+        if self.examples:
+            ttk.Label(self, text="Examples:").pack(anchor="w", padx=10, pady=(5, 0))
+            self.example_box = tk.Text(self, height=min(5, len(self.examples)), width=40)
+            self.example_box.pack(fill="x", padx=10)
+            self.example_box.config(state="disabled")
 
         if isinstance(current, dict):
             fmt = current.get("format", "none")
@@ -49,6 +49,26 @@ class TransformEditorDialog(tk.Toplevel):
         self.var = tk.StringVar(value=fmt)
         for value, label in self.TRANSFORMS:
             ttk.Radiobutton(self, text=label, variable=self.var, value=value).pack(anchor="w", padx=20)
+        self.var.trace_add("write", lambda *_: self._update_example_box())
+
+        ttk.Label(self, text="Value map (key=value per line):").pack(anchor="w", padx=10, pady=(10, 5))
+        self.map_text = tk.Text(self, height=4, width=40)
+        self.map_text.pack(fill="x", padx=10)
+        if mapping_text:
+            self.map_text.insert("1.0", mapping_text)
+        self.map_text.bind("<KeyRelease>", lambda e: self._update_example_box())
+
+        rep_frame = ttk.Frame(self)
+        rep_frame.pack(fill="x", padx=10, pady=5)
+        ttk.Label(rep_frame, text="Replace if pattern matches:").grid(row=0, column=0, sticky="w")
+        self.replace_pattern_var = tk.StringVar(value=replace_pat)
+        self.replace_with_var = tk.StringVar(value=replace_with)
+        ttk.Entry(rep_frame, textvariable=self.replace_pattern_var).grid(row=1, column=0, sticky="ew")
+        ttk.Entry(rep_frame, textvariable=self.replace_with_var).grid(row=1, column=1, sticky="ew")
+        self.replace_pattern_var.trace_add("write", lambda *_: self._update_example_box())
+        self.replace_with_var.trace_add("write", lambda *_: self._update_example_box())
+        rep_frame.grid_columnconfigure(0, weight=1)
+        rep_frame.grid_columnconfigure(1, weight=1)
 
         ttk.Label(self, text="Value map (key=value per line):").pack(anchor="w", padx=10, pady=(10, 5))
         self.map_text = tk.Text(self, height=4, width=40)
@@ -70,7 +90,8 @@ class TransformEditorDialog(tk.Toplevel):
         btns.pack(pady=10)
         ttk.Button(btns, text="Save", command=self._on_save).pack(side="left", padx=5)
         ttk.Button(btns, text="Cancel", command=self.destroy).pack(side="left", padx=5)
-
+        # initial examples rendering
+        self._update_example_box()
     @staticmethod
     def _parse_mapping(text: str) -> dict:
         mapping = {}
@@ -79,8 +100,8 @@ class TransformEditorDialog(tk.Toplevel):
                 k, v = line.split('=', 1)
                 mapping[k.strip()] = v.strip()
         return mapping
-
-    def _on_save(self):
+    def _get_spec(self) -> object:
+        """Return the transformation spec from current UI values."""
         fmt = self.var.get()
         mapping = self._parse_mapping(self.map_text.get("1.0", "end"))
         replace_pat = self.replace_pattern_var.get().strip()
@@ -94,7 +115,21 @@ class TransformEditorDialog(tk.Toplevel):
             result["replace_with"] = replace_with
 
         if list(result.keys()) == ["format"]:
-            self.result = result["format"]
-        else:
-            self.result = result
+            return result["format"]
+        return result
+
+    def _update_example_box(self):
+        if not hasattr(self, "example_box"):
+            return
+        spec = self._get_spec()
+        self.example_box.config(state="normal")
+        self.example_box.delete("1.0", "end")
+        for ex in self.examples:
+            transformed = apply_transform(ex, spec)
+            self.example_box.insert("end", f"{ex} -> {transformed}\n")
+        self.example_box.config(state="disabled")
+
+    def _on_save(self):
+        result = self._get_spec()
+        self.result = result
         self.destroy()
