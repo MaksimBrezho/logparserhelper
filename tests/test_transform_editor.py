@@ -163,7 +163,6 @@ def test_toggle_token_editor(monkeypatch):
     TransformEditorDialog._toggle_token_editor(dlg)
     assert not dlg.token_adv_frame.visible
 
-
 def test_drag_updates_token_order(monkeypatch):
     dlg = TransformEditorDialog.__new__(TransformEditorDialog)
 
