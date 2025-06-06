@@ -209,7 +209,8 @@ class TransformEditorDialog(tk.Toplevel):
         if not hasattr(self, "_drag_widget") or self._drag_widget is None:
             return
         x = event.x_root - self.token_frame.winfo_rootx()
-        new_index = len(self.token_widgets) - 1
+        # allow inserting after the last element
+        new_index = len(self.token_widgets)
         for i, w in enumerate(self.token_widgets):
             if w is self._drag_widget:
                 continue
@@ -224,7 +225,11 @@ class TransformEditorDialog(tk.Toplevel):
             self.token_widgets.insert(new_index, w)
             self.token_order = [wid.token_idx for wid in self.token_widgets]
             self._drag_index = new_index
-            self._refresh_token_list()
+            # Repack existing widgets instead of recreating them to
+            # preserve the drag event bindings
+            for widget in self.token_widgets:
+                widget.pack_forget()
+                widget.pack(side="left", padx=2, pady=2)
 
     def _on_drag_stop(self, event):
         self._drag_widget = None
