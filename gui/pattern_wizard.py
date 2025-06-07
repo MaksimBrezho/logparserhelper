@@ -189,15 +189,15 @@ class PatternWizardDialog(tk.Toplevel):
         right_frame.pack(side="left", fill="both", expand=True)
 
         # Tooltips
-        self._add_tip(ci, "Regex will be case-insensitive")
-        self._add_tip(dm, "How to handle numbers")
-        self._add_tip(ml, "Minimum number length")
-        self._add_tip(mt, "Merge different words")
-        self._add_tip(pa, "Prefer alternatives via |")
-        self._add_tip(bp, "Merge by common prefix")
-        self._add_tip(mx, "Maximum number of options")
-        self._add_tip(wl, "Left of match")
-        self._add_tip(wr, "Right of match")
+        self._add_tip(ci, _("Regex will be case-insensitive"))
+        self._add_tip(dm, _("How to handle numbers"))
+        self._add_tip(ml, _("Minimum number length"))
+        self._add_tip(mt, _("Merge different words"))
+        self._add_tip(pa, _("Prefer alternatives via |"))
+        self._add_tip(bp, _("Merge by common prefix"))
+        self._add_tip(mx, _("Maximum number of options"))
+        self._add_tip(wl, _("Left of match"))
+        self._add_tip(wr, _("Right of match"))
 
         # Скрыть блок с параметрами по умолчанию
         self._toggle_advanced()
@@ -240,20 +240,20 @@ class PatternWizardDialog(tk.Toplevel):
 
         btns = ttk.Frame(example_frame)
         btns.pack(side="left", fill="y", padx=5)
-        ttk.Button(btns, text="Delete", command=self._remove_example).pack(pady=2)
-        ttk.Button(btns, text="Add selection", command=self._add_selection).pack(pady=2)
+        ttk.Button(btns, text=_("Delete"), command=self._remove_example).pack(pady=2)
+        ttk.Button(btns, text=_("Add selection"), command=self._add_selection).pack(pady=2)
 
         # Список совпадений
-        self.match_frame = ttk.LabelFrame(self, text="Matches")
+        self.match_frame = ttk.LabelFrame(self, text=_("Matches"))
         self.match_frame.pack(fill="both", expand=True, padx=5, pady=5)
         self.match_text = tk.Text(self.match_frame, height=10)
         self.match_text.pack(fill="both", expand=True)
 
         mode_frame = ttk.Frame(self)
         mode_frame.pack(fill="x", pady=5)
-        ttk.Radiobutton(mode_frame, text="Matches", variable=self.show_mode, value="matches", command=self._on_mode_change).pack(side="left", padx=5)
-        ttk.Radiobutton(mode_frame, text="Absent", variable=self.show_mode, value="absent", command=self._on_mode_change).pack(side="left", padx=5)
-        ttk.Radiobutton(mode_frame, text="Conflicts", variable=self.show_mode, value="conflicts", command=self._on_mode_change).pack(side="left", padx=5)
+        ttk.Radiobutton(mode_frame, text=_("Matches"), variable=self.show_mode, value="matches", command=self._on_mode_change).pack(side="left", padx=5)
+        ttk.Radiobutton(mode_frame, text=_("Absent"), variable=self.show_mode, value="absent", command=self._on_mode_change).pack(side="left", padx=5)
+        ttk.Radiobutton(mode_frame, text=_("Conflicts"), variable=self.show_mode, value="conflicts", command=self._on_mode_change).pack(side="left", padx=5)
 
         nav = ttk.Frame(self)
         nav.pack(fill="x")
@@ -262,12 +262,12 @@ class PatternWizardDialog(tk.Toplevel):
         ttk.Button(nav, text="→", command=self.next_page).pack(side="left")
 
         # CEF fields
-        field_frame = ttk.LabelFrame(left_frame, text="CEF Fields")
+        field_frame = ttk.LabelFrame(left_frame, text=_("CEF Fields"))
         field_frame.pack(fill="both", expand=True, pady=5)
 
         search_frame = ttk.Frame(field_frame)
         search_frame.pack(fill="x")
-        ttk.Label(search_frame, text="Search:").pack(side="left")
+        ttk.Label(search_frame, text=_("Search:")).pack(side="left")
         self.cef_search_var = tk.StringVar()
         search_entry = ttk.Entry(search_frame, textvariable=self.cef_search_var)
         search_entry.pack(side="left", fill="x", expand=True, padx=5)
