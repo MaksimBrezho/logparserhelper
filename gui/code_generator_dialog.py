@@ -331,14 +331,10 @@ class CodeGeneratorDialog(tk.Toplevel):
 
     # ------------------------------------------------------------------
     def _add_scrolled_label(self, parent, text: str, row: int, column: int):
-        frame = ttk.Frame(parent)
-        var = tk.StringVar(value=text)
-        entry = ttk.Entry(frame, textvariable=var, state="readonly", width=20)
-        scroll = ttk.Scrollbar(frame, orient="horizontal", command=entry.xview)
-        entry.configure(xscrollcommand=scroll.set)
-        entry.pack(fill="x", expand=True)
-        scroll.pack(fill="x")
-        frame.grid(row=row, column=column, sticky="ew", padx=2)
+        widget = tk.Text(parent, height=2, width=40, wrap="word")
+        widget.insert("1.0", text)
+        widget.configure(state="disabled")
+        widget.grid(row=row, column=column, sticky="ew", padx=2)
 
     # ------------------------------------------------------------------
     def _refresh_mapping_list(self):
