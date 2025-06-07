@@ -87,3 +87,12 @@ def test_merge_text_tokens_simple():
     assert re.fullmatch(regex, logs[0])
     assert re.fullmatch(regex, logs[1])
     assert not re.fullmatch(regex, "Database Failure")
+def test_regex_preserves_parentheses():
+    logs = [
+        "session opened for user cyrus by (uid=0)",
+        "session opened for user cyrus by (uid=1)"
+    ]
+    regex = build_draft_regex_from_examples(logs)
+    assert re.fullmatch(regex, logs[0])
+    assert re.fullmatch(regex, logs[1])
+    assert '(' in regex and ')' in regex

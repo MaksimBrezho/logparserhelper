@@ -2,7 +2,7 @@ import re
 from typing import List, Literal, Optional
 from .enum_generator import EnumRegexGenerator
 from .generalizer import generalize_token
-from core.tokenizer.tree_tokenizer import build_token_tree, flatten_token_tree
+from core.tokenizer.tokenizer import tokenize
 from utils.text_utils import common_prefix, common_suffix
 
 
@@ -117,8 +117,7 @@ def build_draft_regex_from_examples(
     tokens_by_line: List[List[str]] = []
 
     for line in lines:
-        tree = build_token_tree(line.strip())
-        pairs = flatten_token_tree(tree)
+        pairs = tokenize(line.strip())
 
         tokens = [val for val, kind in pairs if kind == 'token']
         seps = [val for val, kind in pairs if kind == 'sep']
