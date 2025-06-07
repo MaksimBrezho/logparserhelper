@@ -1,5 +1,6 @@
 
 import tkinter as tk
+from utils.window_utils import set_window_icon
 
 
 class ToolTip:
@@ -13,6 +14,7 @@ class ToolTip:
         if self.tipwindow or not text:
             return
         self.tipwindow = tw = tk.Toplevel(self.widget)
+        set_window_icon(tw)
         tw.wm_overrideredirect(1)
         tw.wm_geometry(f"+{x+10}+{y+10}")
         label = tk.Label(tw, text=text, justify=tk.LEFT,

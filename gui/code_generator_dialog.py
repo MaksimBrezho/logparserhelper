@@ -6,6 +6,7 @@ from utils.transform_logic import apply_transform
 
 from gui.transform_editor import TransformEditorDialog
 from utils import json_utils, code_generator
+from utils.window_utils import set_window_icon
 
 
 class CodeGeneratorDialog(tk.Toplevel):
@@ -24,6 +25,7 @@ class CodeGeneratorDialog(tk.Toplevel):
 
     def __init__(self, parent, per_log_patterns=None, logs=None, log_key=None):
         super().__init__(parent)
+        set_window_icon(self)
         self.title("CEF Code Generator Dialog")
         self.minsize(700, 500)
         self.per_log_patterns = per_log_patterns or []
@@ -244,6 +246,7 @@ class CodeGeneratorDialog(tk.Toplevel):
             messagebox.showerror("Error", "No CEF fields available")
             return None
         dlg = tk.Toplevel(self)
+        set_window_icon(dlg)
         dlg.title("Choose CEF Field")
         var = tk.StringVar(value=keys[0])
         combo = ttk.Combobox(dlg, values=keys, textvariable=var, state="readonly")
@@ -348,6 +351,7 @@ class CodeGeneratorDialog(tk.Toplevel):
             return
 
         preview = tk.Toplevel(self)
+        set_window_icon(preview)
         preview.title("Generated cef_converter.py")
         text = tk.Text(preview, wrap="none")
         text.insert("1.0", data)

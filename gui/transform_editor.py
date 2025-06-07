@@ -2,6 +2,7 @@ import tkinter as tk
 from tkinter import ttk
 
 from utils.transform_logic import apply_transform
+from utils.window_utils import set_window_icon
 
 
 class TransformEditorDialog(tk.Toplevel):
@@ -26,6 +27,7 @@ class TransformEditorDialog(tk.Toplevel):
         logs: list[str] | None = None,
     ):
         super().__init__(parent)
+        set_window_icon(self)
         self.result = None
         self.title(f"Transform Editor for CEF Field: {cef_field}")
         self.minsize(300, 360)
