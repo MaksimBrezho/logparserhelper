@@ -29,6 +29,11 @@ A control panel with buttons and status indicators sits below these areas.
 - Patterns are grouped by category to visually separate rule types.
 - Toggling a checkbox immediately updates highlighting in the viewer.
 
+### Menu bar
+
+- Contains a **Commands** menu with file and tool actions.
+- Includes a **Language** menu for switching between English and Russian.
+
 ### Control panel
 
 Located under the text area and includes:
