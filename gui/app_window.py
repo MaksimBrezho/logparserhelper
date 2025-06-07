@@ -83,6 +83,20 @@ class AppWindow(tk.Frame):
         self.cmd_menu.add_command(label=_("Code Generator"), command=self.open_code_generator, accelerator="Ctrl+G")
         self.cmd_menu.add_command(label=_("Edit User Patterns"), command=self.open_user_pattern_editor, accelerator="Ctrl+U")
         menubar.add_cascade(label=_("Commands"), menu=self.cmd_menu)
+        self.lang_menu = tk.Menu(menubar, tearoff=0)
+        self.lang_menu.add_radiobutton(
+            label="English",
+            variable=self.language_var,
+            value="English",
+            command=lambda: self._set_language('en')
+        )
+        self.lang_menu.add_radiobutton(
+            label="Русский",
+            variable=self.language_var,
+            value="Русский",
+            command=lambda: self._set_language('ru')
+        )
+        menubar.add_cascade(label=_("Language"), menu=self.lang_menu)
         self.master.config(menu=menubar)
         self.menubar = menubar
         self.master.bind_all("<Control-o>", lambda e: self.load_log_file())
@@ -95,11 +109,6 @@ class AppWindow(tk.Frame):
 
         ctrl = tk.Frame(self)
         ctrl.grid(row=1, column=0, sticky="w", padx=5, pady=5)
-
-        lang_box = ttk.Combobox(ctrl, values=["English", "Русский"], state="readonly", textvariable=self.language_var, width=10)
-        lang_box.pack(side="right", padx=5)
-        lang_box.bind("<<ComboboxSelected>>", self._on_language_change)
-        self.lang_box = lang_box
 
         self.prev_btn = tk.Button(ctrl, text=_("← Prev"), command=self.prev_page)
         self.prev_btn.pack(side="left", padx=5)
@@ -441,8 +450,8 @@ class AppWindow(tk.Frame):
 
         messagebox.showinfo(_("Done"), _("Patterns saved."))
 
-    def _on_language_change(self, event=None):
-        lang = 'ru' if self.language_var.get().startswith('Рус') else 'en'
+    def _set_language(self, lang: str):
+        self.language_var.set('Русский' if lang == 'ru' else 'English')
         set_language(lang)
 
     def refresh_translations(self):
@@ -451,10 +460,10 @@ class AppWindow(tk.Frame):
         self.cmd_menu.entryconfigure(2, label=_("Code Generator"))
         self.cmd_menu.entryconfigure(3, label=_("Edit User Patterns"))
         self.menubar.entryconfigure(0, label=_("Commands"))
+        self.menubar.entryconfigure(1, label=_("Language"))
         self.prev_btn.config(text=_("← Prev"))
         self.next_btn.config(text=_("Next →"))
         self.lines_label.config(text=_("Lines per page:"))
         self.create_btn.config(text=_("Create Pattern"))
-        options = ["English", "Русский"]
-        self.lang_box.config(values=options)
+        self.master.title(_("LogParserHelper"))
         self.render_page()
