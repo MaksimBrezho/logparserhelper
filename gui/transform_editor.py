@@ -47,14 +47,14 @@ class TransformEditorDialog(tk.Toplevel):
         self.token_order = []
         self.show_token_editor = tk.BooleanVar(value=False)
         if regex:
-            ttk.Label(self, text="Regex:").pack(anchor="w", padx=10, pady=(5, 0))
+            ttk.Label(self, text=_("Regex:")).pack(anchor="w", padx=10, pady=(5, 0))
             regex_box = tk.Text(self, height=1, width=40)
             regex_box.insert("1.0", regex)
             regex_box.config(state="disabled")
             regex_box.pack(fill="x", padx=10)
 
         if self.examples:
-            ttk.Label(self, text="Examples:").pack(anchor="w", padx=10, pady=(5, 0))
+            ttk.Label(self, text=_("Examples:")).pack(anchor="w", padx=10, pady=(5, 0))
             self.example_box = tk.Text(
                 self, height=min(5, len(self.examples)), width=40
             )
@@ -184,14 +184,15 @@ class TransformEditorDialog(tk.Toplevel):
         self.token_order = list(range(len(tokens)))
 
         frame = ttk.LabelFrame(
-            self.token_adv_frame, text="Reorder tokens (drag to move, Del to remove)"
+            self.token_adv_frame,
+            text=_("Reorder tokens (drag to move, Del to remove)"),
         )
         frame.pack(fill="x")
         self.token_frame = ttk.Frame(frame)
         self.token_frame.pack(fill="x")
         self.token_widgets: list[ttk.Label] = []
         self._refresh_token_list()
-        ttk.Button(frame, text="Reset", command=self._reset_tokens).pack(anchor="e", padx=5, pady=(0, 5))
+        ttk.Button(frame, text=_("Reset"), command=self._reset_tokens).pack(anchor="e", padx=5, pady=(0, 5))
 
     def _refresh_token_list(self):
         if not hasattr(self, "token_frame"):
