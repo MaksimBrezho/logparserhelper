@@ -31,6 +31,13 @@ class TransformEditorDialog(tk.Toplevel):
         self.result = None
         self.title(f"Transform Editor for CEF Field: {cef_field}")
         self.minsize(300, 360)
+        menu_bar = tk.Menu(self)
+        file_menu = tk.Menu(menu_bar, tearoff=0)
+        file_menu.add_command(label="Save", command=self._on_save, accelerator="Ctrl+S")
+        file_menu.add_command(label="Cancel", command=self.destroy)
+        menu_bar.add_cascade(label="File", menu=file_menu)
+        self.config(menu=menu_bar)
+        self.bind_all("<Control-s>", lambda e: self._on_save())
         self.examples = examples or []
         self.logs = logs or []
         self.regex = regex

@@ -44,6 +44,14 @@ class CodeGeneratorDialog(tk.Toplevel):
         self.protocol("WM_DELETE_WINDOW", self._on_close)
 
     def _build_ui(self):
+        menu_bar = tk.Menu(self)
+        file_menu = tk.Menu(menu_bar, tearoff=0)
+        file_menu.add_command(label="Save Config", command=self._save_config)
+        file_menu.add_command(label="Preview Code ▸", command=self._on_preview)
+        file_menu.add_command(label="Generate Python", command=self._on_generate)
+        menu_bar.add_cascade(label="Actions", menu=file_menu)
+        self.config(menu=menu_bar)
+
         header = ttk.LabelFrame(self, text="CEF Header")
         header.pack(fill="x", padx=10, pady=5)
 

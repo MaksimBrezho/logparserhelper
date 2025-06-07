@@ -12,6 +12,11 @@ class UserPatternEditorDialog(tk.Toplevel):
         super().__init__(parent)
         set_window_icon(self)
         self.title("User Patterns")
+        menu_bar = tk.Menu(self)
+        file_menu = tk.Menu(menu_bar, tearoff=0)
+        file_menu.add_command(label="Save", command=self._save_all)
+        menu_bar.add_cascade(label="File", menu=file_menu)
+        self.config(menu=menu_bar)
         self.patterns = [p for p in json_utils.load_all_patterns() if p.get("source") != "builtin"]
         self.selected_index = None
         self._build_ui()
