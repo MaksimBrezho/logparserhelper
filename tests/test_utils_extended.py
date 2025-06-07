@@ -104,3 +104,12 @@ def test_digit_mode_always_fixed_length():
     regex = build_draft_regex_from_examples(lines, digit_mode='always_fixed_length')
     assert re.fullmatch(regex, 'id=99')
     assert not re.fullmatch(regex, 'id=9')
+
+
+def test_line_number_ranges():
+    assert text_utils.line_number_ranges([]) == ""
+    assert text_utils.line_number_ranges([2]) == "2"
+    assert text_utils.line_number_ranges([1, 2, 3, 5, 7, 8, 9]) == "1-3, 5, 7-9"
+    assert text_utils.line_number_ranges([5, 4, 3, 3, 2]) == "2-5"
+
+

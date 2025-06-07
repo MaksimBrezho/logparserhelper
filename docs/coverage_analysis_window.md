@@ -13,7 +13,7 @@ The window displays:
 - Percentage of lines containing at least one `severity` field.
 - Percentage of lines containing at least one `msg` field.
 - Percentage of lines containing at least one `signatureID` field.
-- For each metric, a list of line numbers where the field is missing.
+- For each metric, line number ranges where the field is missing.
 
 Press **OK** or `Esc` to close the dialog.
 
