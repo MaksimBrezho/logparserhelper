@@ -17,6 +17,7 @@ from gui.tooltip import ToolTip
 from gui.pattern_wizard import PatternWizardDialog
 from gui.code_generator_dialog import CodeGeneratorDialog
 from gui.cef_field_dialog import CEFFieldDialog
+from gui.user_pattern_editor import UserPatternEditorDialog
 from utils.text_utils import compute_char_coverage
 import logging
 import re
@@ -77,6 +78,7 @@ class AppWindow(tk.Frame):
         cmd_menu.add_command(label="Load Log", command=self.load_log_file)
         cmd_menu.add_command(label="Save Patterns", command=self.save_current_patterns)
         cmd_menu.add_command(label="Code Generator", command=self.open_code_generator)
+        cmd_menu.add_command(label="Edit User Patterns", command=self.open_user_pattern_editor)
         menubar.add_cascade(label="Commands", menu=cmd_menu)
         self.master.config(menu=menubar)
 
@@ -333,6 +335,19 @@ class AppWindow(tk.Frame):
         except Exception as e:
             logger.error("[CodeGenerator] %s", e)
             messagebox.showerror("Error", f"Failed to open generator: {e}")
+
+    def open_user_pattern_editor(self):
+        """Open dialog for editing user-defined patterns."""
+        try:
+            dlg = UserPatternEditorDialog(self)
+            dlg.grab_set()
+            self.wait_window(dlg)
+            self._load_patterns()
+            self._cache_matches()
+            self.render_page()
+        except Exception as e:
+            logger.error("[UserPatternEditor] %s", e)
+            messagebox.showerror("Error", f"Failed to open editor: {e}")
 
     def get_selected_lines(self):
         """Return selected fragments along with their full line context."""
