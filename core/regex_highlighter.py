@@ -15,10 +15,11 @@ def highlight_dates_in_text(text_widget, patterns):
 
     for i, pat in enumerate(date_patterns):
         tag_name = f"date_{i}"
-        regex = re.compile(pat["pattern"])
+        pattern_text = pat["pattern"]
+        regex_obj = re.compile(pattern_text)
         text_widget.tag_config(tag_name, foreground=colors[i])
 
-        for match in regex.finditer(content):
+        for match in regex_obj.finditer(content):
             start_idx = f"1.0 + {match.start()} chars"
             end_idx = f"1.0 + {match.end()} chars"
             text_widget.tag_add(tag_name, start_idx, end_idx)
