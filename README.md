@@ -1,6 +1,13 @@
-<img src="icon/ALLtoCEF.png" alt="Log Parser Helper icon" width="381" height="381">
+<p align="center">
+  <img src="icon/ALLtoCEF.png" alt="Log Parser Helper icon" width="200">
+</p>
 
-# Log Parser Helper
+<h1 align="center">Log Parser Helper</h1>
+
+<p align="center">
+  <img alt="Python" src="https://img.shields.io/badge/python-3.11%2B-blue?logo=python">
+  <img alt="License" src="https://img.shields.io/badge/license-MIT-green">
+</p>
 
 Log Parser Helper is a collection of utilities and a desktop GUI for
 experimenting with log formats. It lets you build regular expressions,
@@ -9,18 +16,16 @@ highlight log files, and generate code that converts logs to the CEF
 
 ## Features
 
-- **Tkinter GUI** for viewing logs and enabling/disabling regex patterns.
-- **Pattern Wizard** that creates draft regular expressions from selected
-  log lines with advanced controls for numbers, case sensitivity and
-  prefix merging.
-- **Built‑in patterns** for common timestamps and messages plus support
-  for per‑log and user‑defined patterns.
-- **Coverage highlighting** shows which parts of the log are matched by
-  active patterns and calculates the percentage of covered characters.
-- **Code generator** that produces a Python converter for CEF. Mapping
-  rules support value transformations, replacements, token reordering and
-  incremental counters.
-- **Sample log files** in `data/sample_logs` for quick experimentation.
+- 🖥️ **Tkinter GUI** for viewing logs and toggling regex patterns.
+- 🧙 **Pattern Wizard** builds draft regular expressions from selected
+  log lines with controls for numbers, case sensitivity and prefix merging.
+- 📚 **Built‑in patterns** for common timestamps and messages plus
+  user‑defined extensions.
+- 🎨 **Coverage highlighting** shows which parts of the log are matched
+  and calculates the percentage of covered characters.
+- 🛠️ **Code generator** produces a Python converter for CEF with
+  transformations, replacements, token reordering and incremental counters.
+- 🗂️ **Sample logs** in `data/sample_logs` for quick experimentation.
 
 ## Installation
 
@@ -111,7 +116,8 @@ Log examples used in this project come from the [loghub](https://github.com/logp
 
 Jieming Zhu, Shilin He, Pinjia He, Jinyang Liu, Michael R. Lyu. [Loghub: A Large Collection of System Log Datasets for AI-driven Log Analytics](https://arxiv.org/abs/2008.06448). IEEE International Symposium on Software Reliability Engineering (ISSRE), 2023.
 
-This project is open for non-commercial use.
+This project is open source and released under the terms of the
+[MIT License](LICENSE).
 
 ## License
 

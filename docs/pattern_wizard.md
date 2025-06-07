@@ -1,4 +1,4 @@
-# Pattern Wizard
+# 🧙 Pattern Wizard
 
 This document describes all aspects of the Pattern Wizard dialog located in `gui/pattern_wizard.py`. The wizard assists in creating regular expression patterns from sample log lines.
 
