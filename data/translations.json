@@ -126,6 +126,13 @@
   "Files written to {out_dir}": "Файлы записаны в {out_dir}",
   "Pattern '{name}' saved.": "Шаблон '{name}' сохранён.",
   "Transform Editor for CEF Field: {cef_field}": "Редактор преобразований для поля CEF: {cef_field}",
+  "Pattern": "Шаблон",
+  "Regex": "Regex",
+  "Transform": "Преобразование",
+  "Example": "Пример",
+  "Result": "Результат",
+  "Custom": "Своя настройка",
+  "Capitalized": "Каждое слово с заглавной буквы"
   "One word (non-space characters)": "Одно слово (не пробелы)",
   "Line to end (non-greedy)": "До конца строки (лениво)",
   "Fixed length number (3)": "Число фикс. длины (3)",
