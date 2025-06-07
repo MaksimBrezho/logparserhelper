@@ -103,7 +103,6 @@ def test_dialog_merges_new_patterns(monkeypatch):
     assert "OldPat" in patterns
     assert "NewPat" in patterns
 
-
 def test_initial_mappings_signature_id_incremental(monkeypatch):
     dlg = CodeGeneratorDialog.__new__(CodeGeneratorDialog)
     dlg.per_log_patterns = []
@@ -119,4 +118,3 @@ def test_gather_mappings_handles_rule():
     dlg.mappings = [{"cef": "signatureID", "rule": "incremental", "transform": "none"}]
     result = CodeGeneratorDialog._gather_mappings(dlg)
     assert result == [{"cef": "signatureID", "rule": "incremental", "transform": "none"}]
-

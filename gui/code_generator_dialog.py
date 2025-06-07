@@ -109,7 +109,6 @@ class CodeGeneratorDialog(tk.Toplevel):
             if field in self.CONSTANT_FIELDS and not names:
                 mappings.append({"cef": field, "pattern": "", "value": "", "transform": "none"})
                 continue
-
             if not names:
                 if field == "signatureID":
                     mappings.append({"cef": field, "rule": "incremental", "transform": "none"})
