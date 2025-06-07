@@ -40,10 +40,10 @@ Launch the GUI with:
 python main.py
 ```
 
-Open a log file with the **Load Log** button, select lines and run the
-**Create Pattern** wizard to build new patterns. Use **Save Patterns**
-to store per‑log patterns, or the **Code Generator** to produce a CEF
-converter.
+Open a log file from the **Commands** menu, select lines and run the
+**Create Pattern** wizard to build new patterns. Use **Save Patterns** from
+the same menu to store per‑log patterns, or choose **Code Generator** to
+produce a CEF converter.
 
 ## Building an installer
 

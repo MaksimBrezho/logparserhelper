@@ -75,7 +75,14 @@ class AppWindow(tk.Frame):
         ctrl = tk.Frame(self)
         ctrl.grid(row=1, column=0, sticky="w", padx=5, pady=5)
 
-        tk.Button(ctrl, text="Load Log", command=self.load_log_file).pack(side="left", padx=5)
+        cmd_btn = tk.Menubutton(ctrl, text="Commands", relief=tk.RAISED)
+        cmd_menu = tk.Menu(cmd_btn, tearoff=0)
+        cmd_menu.add_command(label="Load Log", command=self.load_log_file)
+        cmd_menu.add_command(label="Save Patterns", command=self.save_current_patterns)
+        cmd_menu.add_command(label="Code Generator", command=self.open_code_generator)
+        cmd_btn.config(menu=cmd_menu)
+        cmd_btn.pack(side="left", padx=5)
+
         tk.Button(ctrl, text="← Prev", command=self.prev_page).pack(side="left", padx=5)
         tk.Button(ctrl, text="Next →", command=self.next_page).pack(side="left", padx=5)
 
@@ -91,8 +98,6 @@ class AppWindow(tk.Frame):
         self.coverage_label = tk.Label(ctrl, text="Coverage: 0%")
         self.coverage_label.pack(side="left", padx=15)
         tk.Button(ctrl, text="Create Pattern", command=self.open_pattern_wizard).pack(side="left", padx=5)
-        tk.Button(ctrl, text="Save Patterns", command=self.save_current_patterns).pack(side="left", padx=5)
-        tk.Button(ctrl, text="Code Generator", command=self.open_code_generator).pack(side="left", padx=5)
         self.text_area.bind("<Motion>", self.on_hover)
         self.text_area.bind("<Leave>", lambda e: self.tooltip.hidetip())
 

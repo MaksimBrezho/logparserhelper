@@ -35,14 +35,12 @@ Located under the text area and includes:
 
 | Element | Purpose |
 |---------|---------|
-| **Load Log** | Opens a file dialog and loads a log for viewing. |
+| **Commands ▾** | Drop-down with **Load Log**, **Save Patterns** and **Code Generator** actions. |
 | **← Prev** / **Next →** | Switch pages when viewing logs page by page. |
 | `Lines per page` | Input/spin box for the number of lines per page. |
 | **Page X of Y** | Shows the current page and total pages. |
 | **Coverage** | Displays the percentage of characters covered by active patterns. |
 | **Create Pattern** | Launches the wizard for creating a new pattern from selected lines. |
-| **Save Patterns** | Saves active patterns as log-specific ones for the current file. |
-| **Code Generator** | Opens the dialog for generating the CEF converter code. |
 
 ## Behavior
 
