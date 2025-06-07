@@ -130,6 +130,18 @@ class CodeGeneratorDialog(tk.Toplevel):
 
     def _merge_mappings(self, existing: list[dict], initial: list[dict]) -> list[dict]:
         """Merge mappings loaded from config with defaults based on current patterns."""
+        def _is_placeholder(mapping: dict) -> bool:
+            """Return True if the mapping represents an empty default entry."""
+            return (
+                not mapping.get("pattern")
+                and not mapping.get("value")
+                and mapping.get("rule") is None
+            ) or (
+                mapping.get("rule") == "incremental"
+                and not mapping.get("pattern")
+                and not mapping.get("value")
+            )
+
         merged = list(existing)
         seen = {
             (m.get("cef"), m.get("pattern"), m.get("value"), m.get("rule"))
@@ -137,9 +149,26 @@ class CodeGeneratorDialog(tk.Toplevel):
         }
         for m in initial:
             key = (m.get("cef"), m.get("pattern"), m.get("value"), m.get("rule"))
-            if key not in seen:
-                merged.append(m)
-                seen.add(key)
+            if key in seen:
+                continue
+
+            # Remove placeholder mapping for the same field
+            if not _is_placeholder(m):
+                for idx in range(len(merged) - 1, -1, -1):
+                    current = merged[idx]
+                    if current.get("cef") == m.get("cef") and _is_placeholder(current):
+                        del merged[idx]
+                        seen.discard(
+                            (
+                                current.get("cef"),
+                                current.get("pattern"),
+                                current.get("value"),
+                                current.get("rule"),
+                            )
+                        )
+
+            merged.append(m)
+            seen.add(key)
         return merged
 
     # ------------------------------------------------------------------

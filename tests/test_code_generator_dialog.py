@@ -118,3 +118,32 @@ def test_gather_mappings_handles_rule():
     dlg.mappings = [{"cef": "signatureID", "rule": "incremental", "transform": "none"}]
     result = CodeGeneratorDialog._gather_mappings(dlg)
     assert result == [{"cef": "signatureID", "rule": "incremental", "transform": "none"}]
+
+
+def test_merge_replaces_placeholder(monkeypatch):
+    dlg = CodeGeneratorDialog.__new__(CodeGeneratorDialog)
+    dlg.per_log_patterns = []
+    monkeypatch.setattr(json_utils, "load_cef_field_keys", lambda: ["signatureID", "name", "severity"])
+    monkeypatch.setattr(json_utils, "load_cef_fields", lambda: [
+        {"key": "signatureID"},
+        {"key": "name"},
+        {"key": "severity"},
+    ])
+
+    existing = CodeGeneratorDialog._build_initial_mappings(dlg)
+
+    dlg.per_log_patterns = [
+        {"name": "SigPat", "regex": "sig", "fields": ["signatureID"]},
+        {"name": "NamePat", "regex": "nm", "fields": ["name"]},
+        {"name": "SevPat", "regex": "sv", "fields": ["severity"]},
+    ]
+    initial = CodeGeneratorDialog._build_initial_mappings(dlg)
+    merged = CodeGeneratorDialog._merge_mappings(dlg, existing, initial)
+
+    sig = [m for m in merged if m["cef"] == "signatureID"]
+    name = [m for m in merged if m["cef"] == "name"]
+    sev = [m for m in merged if m["cef"] == "severity"]
+
+    assert len(sig) == 1 and sig[0].get("pattern") == "SigPat"
+    assert len(name) == 1 and name[0].get("pattern") == "NamePat"
+    assert len(sev) == 1 and sev[0].get("pattern") == "SevPat"
