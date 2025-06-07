@@ -392,16 +392,27 @@ class CodeGeneratorDialog(tk.Toplevel):
             child.destroy()
 
         headers = [
-            "CEF Field",
-            "Pattern",
-            "Regex",
-            "Transform",
-            "Example",
-            "Result",
+            _("CEF Field"),
+            _("Pattern"),
+            _("Regex"),
+            _("Transform"),
+            _("Example"),
+            _("Result"),
             "",
         ]
         for col, text in enumerate(headers):
-            ttk.Label(self.mapping_list, text=text, font=("Segoe UI", 9, "bold")).grid(row=0, column=col, sticky="w", padx=2)
+            ttk.Label(
+                self.mapping_list, text=text, font=("Segoe UI", 9, "bold")
+            ).grid(row=0, column=col, sticky="w", padx=2)
+
+        transform_labels = {
+            "none": _("as is"),
+            "lower": _("lower case"),
+            "upper": _("UPPER CASE"),
+            "capitalize": _("Capitalized"),
+            "sentence": _("Sentence case"),
+            "custom": _("Custom"),
+        }
 
         pattern_map = {p["name"]: p for p in self._collect_patterns()}
         all_names = list(pattern_map.keys())
@@ -448,7 +459,8 @@ class CodeGeneratorDialog(tk.Toplevel):
                     entry.grid(row=idx, column=1, sticky="ew", padx=2)
                     entry.bind("<KeyRelease>", lambda e, i=idx-1, v=var: self._on_value_changed(i, v))
             self._add_scrolled_label(self.mapping_list, regex, idx, 2)
-            btn_text = m["transform"] if isinstance(m.get("transform"), str) else "custom"
+            btn_key = m["transform"] if isinstance(m.get("transform"), str) else "custom"
+            btn_text = transform_labels.get(btn_key, btn_key)
             state = "normal"
             if (
                 m["cef"] in self.CONSTANT_FIELDS or m["cef"] == "signatureID"
