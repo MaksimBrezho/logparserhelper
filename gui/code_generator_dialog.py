@@ -266,7 +266,7 @@ class CodeGeneratorDialog(tk.Toplevel):
             result["val"] = var.get()
             dlg.destroy()
 
-        ttk.Button(dlg, text="OK", command=ok).pack(pady=5)
+        ttk.Button(dlg, text=_("OK"), command=ok).pack(pady=5)
         dlg.grab_set()
         self.wait_window(dlg)
         return result["val"]
