@@ -72,16 +72,16 @@ class AppWindow(tk.Frame):
         self.pattern_panel.grid_propagate(False)
         self.pattern_panel.cef_fields = self.cef_fields
 
-        ctrl = tk.Frame(self)
-        ctrl.grid(row=1, column=0, sticky="w", padx=5, pady=5)
-
-        cmd_btn = tk.Menubutton(ctrl, text="Commands", relief=tk.RAISED)
-        cmd_menu = tk.Menu(cmd_btn, tearoff=0)
+        menubar = tk.Menu(self.master)
+        cmd_menu = tk.Menu(menubar, tearoff=0)
         cmd_menu.add_command(label="Load Log", command=self.load_log_file)
         cmd_menu.add_command(label="Save Patterns", command=self.save_current_patterns)
         cmd_menu.add_command(label="Code Generator", command=self.open_code_generator)
-        cmd_btn.config(menu=cmd_menu)
-        cmd_btn.pack(side="left", padx=5)
+        menubar.add_cascade(label="Commands", menu=cmd_menu)
+        self.master.config(menu=menubar)
+
+        ctrl = tk.Frame(self)
+        ctrl.grid(row=1, column=0, sticky="w", padx=5, pady=5)
 
         tk.Button(ctrl, text="← Prev", command=self.prev_page).pack(side="left", padx=5)
         tk.Button(ctrl, text="Next →", command=self.next_page).pack(side="left", padx=5)
