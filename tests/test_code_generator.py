@@ -130,3 +130,27 @@ def test_generate_files_value_map_substring(tmp_path):
     result = conv.convert_line(line)
     assert 'msg=Info: 1 and more' in result
 
+
+def test_generate_files_incremental_rule(tmp_path):
+    header = {'CEF Version': '0'}
+    patterns = []
+    mappings = [
+        {
+            'cef': 'signatureID',
+            'rule': 'incremental',
+            'transform': 'none',
+        },
+    ]
+
+    paths = generate_files(header, mappings, patterns, tmp_path)
+    spec = importlib.util.spec_from_file_location('cef_converter', paths[0])
+    module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(module)
+    conv = module.LogToCEFConverter()
+    r1 = conv.convert_line('l1')
+    r2 = conv.convert_line('l2')
+    r3 = conv.convert_line('l3')
+    assert 'signatureID=0' in r1
+    assert 'signatureID=1' in r2
+    assert 'signatureID=2' in r3
+
