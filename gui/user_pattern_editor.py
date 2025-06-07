@@ -56,32 +56,32 @@ class UserPatternEditorDialog(tk.Toplevel):
 
         row = ttk.Frame(right)
         row.pack(fill="x", pady=2)
-        ttk.Label(row, text="Name:").pack(side="left")
+        ttk.Label(row, text=_("Name:")).pack(side="left")
         ttk.Entry(row, textvariable=self.name_var).pack(side="left", fill="x", expand=True)
 
         row = ttk.Frame(right)
         row.pack(fill="x", pady=2)
-        ttk.Label(row, text="Regex:").pack(side="left")
+        ttk.Label(row, text=_("Regex:")).pack(side="left")
         ttk.Entry(row, textvariable=self.regex_var).pack(side="left", fill="x", expand=True)
 
         row = ttk.Frame(right)
         row.pack(fill="x", pady=2)
-        ttk.Label(row, text="Category:").pack(side="left")
+        ttk.Label(row, text=_("Category:")).pack(side="left")
         ttk.Entry(row, textvariable=self.category_var).pack(side="left", fill="x", expand=True)
 
         row = ttk.Frame(right)
         row.pack(fill="x", pady=2)
-        ttk.Label(row, text="Fields (comma separated):").pack(side="left")
+        ttk.Label(row, text=_("Fields (comma separated):")).pack(side="left")
         ttk.Entry(row, textvariable=self.fields_var).pack(side="left", fill="x", expand=True)
 
         row = ttk.Frame(right)
         row.pack(fill="x", pady=2)
-        ttk.Label(row, text="Priority:").pack(side="left")
+        ttk.Label(row, text=_("Priority:")).pack(side="left")
         ttk.Entry(row, textvariable=self.priority_var).pack(side="left", fill="x", expand=True)
 
         row = ttk.Frame(right)
         row.pack(fill="x", pady=2)
-        ttk.Label(row, text="Log Keys:").pack(side="left")
+        ttk.Label(row, text=_("Log Keys:")).pack(side="left")
         ttk.Entry(row, textvariable=self.keys_var).pack(side="left", fill="x", expand=True)
 
         btns = ttk.Frame(self)
