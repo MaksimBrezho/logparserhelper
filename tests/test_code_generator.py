@@ -176,3 +176,25 @@ def test_generate_files_handles_quotes(tmp_path):
     result = conv.convert_line('foo')
     assert 'dvc=foo' in result
 
+
+def test_generate_files_filters_unused_patterns(tmp_path):
+    header = {'CEF Version': '0'}
+    patterns = [
+        {'name': 'Used', 'regex': r'us'},
+        {'name': 'Unused', 'regex': r'un'},
+    ]
+    mappings = [
+        {
+            'cef': 'msg',
+            'pattern': 'Used',
+            'transform': 'none',
+        }
+    ]
+    paths = generate_files(header, mappings, patterns, tmp_path)
+    spec = importlib.util.spec_from_file_location('cef_converter', paths[0])
+    module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(module)
+    conv = module.LogToCEFConverter()
+    assert set(conv.compiled_patterns.keys()) == {'Used'}
+
+
