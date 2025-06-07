@@ -210,7 +210,7 @@ class PatternWizardDialog(tk.Toplevel):
 
         self.SNIPPET_DEFAULT = _("Insert snippet...")
         self.snippet_var = tk.StringVar(value=self.SNIPPET_DEFAULT)
-        self.snippet_map = {label: regex for label, regex in SNIPPETS}
+        self.snippet_map = {_(label): regex for label, regex in SNIPPETS}
         snippet_combo = ttk.Combobox(
             regex_frame,
             textvariable=self.snippet_var,
@@ -362,11 +362,11 @@ class PatternWizardDialog(tk.Toplevel):
         end = min(start + self.page_size, len(lines_info))
         page_lines = lines_info[start:end]
 
-        for _, line, _ in page_lines:
+        for _idx, line, _m in page_lines:
             self.match_text.insert(tk.END, line + "\n")
 
         matches_by_line = {}
-        for idx, (_, _, matches) in enumerate(page_lines, start=1):
+        for idx, (_lineno, _line, matches) in enumerate(page_lines, start=1):
             if matches:
                 matches_by_line[idx] = [
                     {

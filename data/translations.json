@@ -133,5 +133,11 @@
   "Result": "Результат",
   "Custom": "Своя настройка",
   "Capitalized": "Каждое слово с заглавной буквы"
+  "One word (non-space characters)": "Одно слово (не пробелы)",
+  "Line to end (non-greedy)": "До конца строки (лениво)",
+  "Fixed length number (3)": "Число фикс. длины (3)",
+  "Segment in []": "Сегмент в []",
+  "Segment in ()": "Сегмент в ()"
+  "OK": "ОК"
 }
 
