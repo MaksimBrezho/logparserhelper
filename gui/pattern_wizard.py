@@ -210,7 +210,7 @@ class PatternWizardDialog(tk.Toplevel):
 
         self.SNIPPET_DEFAULT = _("Insert snippet...")
         self.snippet_var = tk.StringVar(value=self.SNIPPET_DEFAULT)
-        self.snippet_map = {label: regex for label, regex in SNIPPETS}
+        self.snippet_map = {_(label): regex for label, regex in SNIPPETS}
         snippet_combo = ttk.Combobox(
             regex_frame,
             textvariable=self.snippet_var,
