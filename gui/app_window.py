@@ -75,24 +75,24 @@ class AppWindow(tk.Frame):
         ctrl = tk.Frame(self)
         ctrl.grid(row=1, column=0, sticky="w", padx=5, pady=5)
 
-        tk.Button(ctrl, text="Загрузить лог", command=self.load_log_file).pack(side="left", padx=5)
-        tk.Button(ctrl, text="← Назад", command=self.prev_page).pack(side="left", padx=5)
-        tk.Button(ctrl, text="Вперёд →", command=self.next_page).pack(side="left", padx=5)
+        tk.Button(ctrl, text="Load Log", command=self.load_log_file).pack(side="left", padx=5)
+        tk.Button(ctrl, text="← Prev", command=self.prev_page).pack(side="left", padx=5)
+        tk.Button(ctrl, text="Next →", command=self.next_page).pack(side="left", padx=5)
 
-        tk.Label(ctrl, text="Строк на странице:").pack(side="left", padx=(20, 5))
+        tk.Label(ctrl, text="Lines per page:").pack(side="left", padx=(20, 5))
 
         self.spinbox = tk.Spinbox(ctrl, from_=1, to=1000, width=5, command=self.update_page_size)
         self.spinbox.pack(side="left")
         self.spinbox.delete(0, tk.END)
         self.spinbox.insert(0, str(self.page_size))
 
-        self.status_label = tk.Label(ctrl, text="Стр. 0 из 0")
+        self.status_label = tk.Label(ctrl, text="Page 0 of 0")
         self.status_label.pack(side="left", padx=15)
-        self.coverage_label = tk.Label(ctrl, text="Покрытие: 0%")
+        self.coverage_label = tk.Label(ctrl, text="Coverage: 0%")
         self.coverage_label.pack(side="left", padx=15)
-        tk.Button(ctrl, text="Создать паттерн", command=self.open_pattern_wizard).pack(side="left", padx=5)
-        tk.Button(ctrl, text="Сохранить паттерны", command=self.save_current_patterns).pack(side="left", padx=5)
-        tk.Button(ctrl, text="Генератор кода", command=self.open_code_generator).pack(side="left", padx=5)
+        tk.Button(ctrl, text="Create Pattern", command=self.open_pattern_wizard).pack(side="left", padx=5)
+        tk.Button(ctrl, text="Save Patterns", command=self.save_current_patterns).pack(side="left", padx=5)
+        tk.Button(ctrl, text="Code Generator", command=self.open_code_generator).pack(side="left", padx=5)
         self.text_area.bind("<Motion>", self.on_hover)
         self.text_area.bind("<Leave>", lambda e: self.tooltip.hidetip())
 
@@ -197,7 +197,7 @@ class AppWindow(tk.Frame):
         pattern_index_map = {key: i for i, key in enumerate(pattern_keys)}
 
         coverage = self._compute_coverage(active_names)
-        self.coverage_label.config(text=f"Покрытие: {coverage:.1f}%")
+        self.coverage_label.config(text=f"Coverage: {coverage:.1f}%")
 
         # Проверка на пересекающиеся паттерны
         def has_overlap(matches: list[dict]) -> bool:
@@ -238,7 +238,7 @@ class AppWindow(tk.Frame):
 
     def _update_status(self):
         total_pages = (len(self.logs) - 1) // self.page_size + 1 if self.logs else 0
-        self.status_label.config(text=f"Стр. {self.current_page + 1} из {total_pages}")
+        self.status_label.config(text=f"Page {self.current_page + 1} of {total_pages}")
 
     def next_page(self):
         if (self.current_page + 1) * self.page_size < len(self.logs):
@@ -257,7 +257,7 @@ class AppWindow(tk.Frame):
             names = [self.tag_map[t]["name"] for t in tags if t in self.tag_map]
             if len(names) > 1:
                 self.tooltip.schedule(
-                    "Паттерны: " + ", ".join(names), event.x_root, event.y_root
+                    "Patterns: " + ", ".join(names), event.x_root, event.y_root
                 )
             else:
                 self.tooltip.unschedule()
@@ -267,17 +267,17 @@ class AppWindow(tk.Frame):
     def open_pattern_wizard(self):
         selections = self.get_selected_lines()
         if not selections:
-            messagebox.showwarning("Нет выделения", "Пожалуйста, выделите строки для генерации паттерна.")
+            messagebox.showwarning("No Selection", "Please select lines to generate a pattern.")
             return
 
         # Получаем CEF-поля и путь к лог-файлу
         cef_fields = getattr(self.pattern_panel, "cef_fields", [])
         source_file = getattr(self, "source_path", "example.log")
 
-        # Имя набора паттернов по умолчанию
+        # Default pattern set name
         default_name = get_log_name_for_file(source_file) or os.path.basename(source_file)
         log_name = simpledialog.askstring(
-            "Имя набора", "Введите имя для пер-лог паттернов:",
+            "Set Name", "Enter name for per-log patterns:",
             initialvalue=default_name,
             parent=self
         )
@@ -306,7 +306,7 @@ class AppWindow(tk.Frame):
             self.render_page()
         except Exception as e:
             logger.error("[PatternWizard] %s", e)
-            messagebox.showerror("Ошибка", f"Не удалось открыть мастер: {e}")
+            messagebox.showerror("Error", f"Failed to open wizard: {e}")
 
     def open_code_generator(self):
         """Open the code generator dialog (stub)."""
@@ -315,7 +315,7 @@ class AppWindow(tk.Frame):
             if not per_patterns:
                 keys = list(load_log_key_map().keys())
                 if keys:
-                    prompt = "Выберите ключ лог-файла:\n" + ", ".join(keys)
+                    prompt = "Choose log file key:\n" + ", ".join(keys)
                     key = simpledialog.askstring("Log Key", prompt, parent=self)
                     if key:
                         per_patterns = load_per_log_patterns_by_key(key)
@@ -327,7 +327,7 @@ class AppWindow(tk.Frame):
             dlg.grab_set()
         except Exception as e:
             logger.error("[CodeGenerator] %s", e)
-            messagebox.showerror("Ошибка", f"Не удалось открыть генератор: {e}")
+            messagebox.showerror("Error", f"Failed to open generator: {e}")
 
     def get_selected_lines(self):
         """Return selected fragments along with their full line context."""
@@ -356,12 +356,12 @@ class AppWindow(tk.Frame):
 
     def save_current_patterns(self):
         if not getattr(self, "source_path", None):
-            messagebox.showinfo("Нет файла", "Сначала загрузите лог-файл")
+            messagebox.showinfo("No File", "Load a log file first")
             return
 
         default_name = get_log_name_for_file(self.source_path) or os.path.basename(self.source_path)
         log_name = simpledialog.askstring(
-            "Имя набора", "Введите имя для пер-лог паттернов:",
+            "Set Name", "Enter name for per-log patterns:",
             initialvalue=default_name,
             parent=self
         )
@@ -399,4 +399,4 @@ class AppWindow(tk.Frame):
         self._cache_matches()
         self.render_page()
 
-        messagebox.showinfo("Готово", "Паттерны сохранены.")
+        messagebox.showinfo("Done", "Patterns saved.")
