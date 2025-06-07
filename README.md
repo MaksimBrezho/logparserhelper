@@ -1,3 +1,5 @@
+![Log Parser Helper icon](icon/ALLtoCEF.ico)
+
 # Log Parser Helper
 
 Log Parser Helper is a collection of utilities and a desktop GUI for
