@@ -161,3 +161,32 @@ def test_merge_skips_placeholder_when_constant_exists(monkeypatch):
 
     vendor = [m for m in merged if m["cef"] == "deviceVendor"]
     assert vendor == existing
+
+
+def test_save_config_persists_only_version(monkeypatch):
+    class DummyVar:
+        def __init__(self, val):
+            self.val = val
+        def get(self):
+            return self.val
+
+    captured = {}
+
+    def fake_save(data, key):
+        captured['data'] = data
+        captured['key'] = key
+
+    dlg = CodeGeneratorDialog.__new__(CodeGeneratorDialog)
+    dlg.header_vars = {
+        "CEF Version": DummyVar("0"),
+        "Device Vendor": DummyVar("ACME"),
+    }
+    dlg.mappings = []
+    dlg.log_key = "app"
+
+    monkeypatch.setattr(json_utils, "save_conversion_config", fake_save)
+
+    CodeGeneratorDialog._save_config(dlg)
+
+    assert captured['data']['header'] == {"CEF Version": "0"}
+    assert captured['key'] == "app"
