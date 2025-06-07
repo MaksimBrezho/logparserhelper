@@ -1,10 +1,11 @@
 import os
 import tkinter as tk
+from utils.json_utils import resource_path
 
 
 def get_icon_path() -> str:
     """Return the absolute path to the application icon."""
-    return os.path.join(os.path.dirname(os.path.dirname(__file__)), "icon", "ALLtoCEF.ico")
+    return resource_path("icon", "ALLtoCEF.ico")
 
 
 def set_window_icon(window: tk.Misc) -> None:
