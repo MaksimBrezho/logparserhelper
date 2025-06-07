@@ -457,14 +457,9 @@ class AppWindow(tk.Frame):
     def _set_language(self, lang: str):
         self.language_var.set('Русский' if lang == 'ru' else 'English')
         set_language(lang)
-        # reload main window to apply translations
-        self.master.after(0, self._restart_main_window)
+        # refresh translations without recreating the window
+        self.refresh_translations()
 
-    def _restart_main_window(self):
-        """Destroy current root and recreate the main window."""
-        from main import main as start_app
-        self.master.destroy()
-        start_app()
 
     def refresh_translations(self):
         self.cmd_menu.entryconfigure(0, label=_("Load Log"))
