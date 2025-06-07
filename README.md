@@ -36,3 +36,7 @@ When configuring mappings, several value transformations are available:
 
 Mappings created automatically for CEF fields of the `Time` category
 use this transformation by default.
+
+## UML Diagrams
+
+Automatically generated class and package diagrams are in [docs/uml](docs/uml).
