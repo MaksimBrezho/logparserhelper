@@ -1,6 +1,17 @@
 import json
 import logging
 import os
+import sys
+
+BASE_DIR = getattr(
+    sys,
+    "_MEIPASS",
+    os.path.abspath(os.path.join(os.path.dirname(__file__), "..")),
+)
+
+
+def resource_path(*parts):
+    return os.path.join(BASE_DIR, *parts)
 
 logger = logging.getLogger(__name__)
 
@@ -19,10 +30,10 @@ def get_conversion_config_path(log_key: str | None = None) -> str:
     return CONVERSION_CONFIG_PATH
 
 USER_PATTERNS_PATH = os.path.join(USER_DATA_DIR, "patterns_user.json")
-BUILTIN_PATTERNS_PATH = os.path.join("data", "patterns_builtin.json")
-LOG_KEY_MAP_PATH = os.path.join("data", "log_key_map.json")
-BUILTIN_PATTERN_KEYS_PATH = os.path.join("data", "builtin_pattern_keys.json")
-CEF_FIELDS_PATH = os.path.join("data", "cef_fields.json")
+BUILTIN_PATTERNS_PATH = resource_path("data", "patterns_builtin.json")
+LOG_KEY_MAP_PATH = resource_path("data", "log_key_map.json")
+BUILTIN_PATTERN_KEYS_PATH = resource_path("data", "builtin_pattern_keys.json")
+CEF_FIELDS_PATH = resource_path("data", "cef_fields.json")
 PER_LOG_PATTERNS_PATH = os.path.join(USER_DATA_DIR, "per_log_patterns.json")
 
 def load_builtin_pattern_keys():

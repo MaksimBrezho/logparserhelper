@@ -6,6 +6,10 @@ import os
 def build():
     root_dir = os.path.dirname(os.path.abspath(__file__))
     icon_path = os.path.join(root_dir, "icon", "ALLtoCEF.ico")
+    data_files = [
+        ("data/cef_fields.json", "data"),
+        ("data/patterns_builtin.json", "data"),
+    ]
     pyinstaller_cmd = [
         sys.executable,
         "-m",
@@ -15,6 +19,10 @@ def build():
         f"--icon={icon_path}",
         os.path.join(root_dir, "main.py"),
     ]
+    for src, dest in data_files:
+        pyinstaller_cmd.append(
+            f"--add-data={os.path.join(root_dir, src)}{os.pathsep}{dest}"
+        )
     subprocess.run(pyinstaller_cmd, check=True)
 
 
