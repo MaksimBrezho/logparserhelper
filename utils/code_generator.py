@@ -7,6 +7,8 @@ from textwrap import dedent
 from typing import List, Dict
 import json
 
+from .transform_logic import apply_transform
+
 
 def generate_files(
     header: Dict[str, str],
@@ -60,7 +62,23 @@ def generate_files(
     converter_path = os.path.join(output_dir, f"cef_converter{suffix}.py")
     main_path = os.path.join(output_dir, f"main_cef_converter{suffix}.py")
 
-    header_repr = json.dumps(header, ensure_ascii=False, indent=4)
+    # Override header values with constants from mappings when available
+    header_map = {
+        "Device Vendor": "deviceVendor",
+        "Device Product": "deviceProduct",
+        "Device Version": "deviceVersion",
+        "Event Class ID": "signatureID",
+        "Event Name": "name",
+        "Severity (int)": "severity",
+    }
+    updated_header = dict(header)
+    for key, cef_key in header_map.items():
+        for m in mappings:
+            if m.get("cef") == cef_key and m.get("value") and not m.get("pattern"):
+                updated_header[key] = apply_transform(m["value"], m.get("transform", "none"))
+                break
+
+    header_repr = json.dumps(updated_header, ensure_ascii=False, indent=4)
     pattern_entries = []
     for p in patterns:
         key = json.dumps(p['name'], ensure_ascii=False)
