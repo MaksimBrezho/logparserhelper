@@ -34,10 +34,11 @@ class TransformEditorDialog(tk.Toplevel):
         menu_bar = tk.Menu(self)
         file_menu = tk.Menu(menu_bar, tearoff=0)
         file_menu.add_command(label="Save", command=self._on_save, accelerator="Ctrl+S")
-        file_menu.add_command(label="Cancel", command=self.destroy)
+        file_menu.add_command(label="Cancel", command=self.destroy, accelerator="Esc")
         menu_bar.add_cascade(label="File", menu=file_menu)
         self.config(menu=menu_bar)
         self.bind_all("<Control-s>", lambda e: self._on_save())
+        self.bind_all("<Escape>", lambda e: self.destroy())
         self.examples = examples or []
         self.logs = logs or []
         self.regex = regex
@@ -96,6 +97,7 @@ class TransformEditorDialog(tk.Toplevel):
         self.map_text.bind("<KeyRelease>", lambda e: self._update_example_box())
         apply_btn = ttk.Button(self, text="Apply", command=self._update_example_box)
         apply_btn.pack(anchor="e", padx=10, pady=(0, 5))
+        self.bind_all("<Control-Return>", lambda e: self._update_example_box())
 
         rep_frame = ttk.Frame(self)
         rep_frame.pack(fill="x", padx=10, pady=5)
@@ -132,10 +134,6 @@ class TransformEditorDialog(tk.Toplevel):
                 self._refresh_token_list()
             self._toggle_token_editor()
 
-        btns = ttk.Frame(self)
-        btns.pack(pady=10)
-        ttk.Button(btns, text="Save", command=self._on_save).pack(side="left", padx=5)
-        ttk.Button(btns, text="Cancel", command=self.destroy).pack(side="left", padx=5)
         # initial examples rendering
         self._update_example_box()
 

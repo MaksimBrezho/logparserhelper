@@ -32,13 +32,13 @@ Click **+ Add Field** to add another mapping using any supported CEF key.
 
 Rows for the mandatory fields `deviceVendor`, `deviceProduct`, `deviceVersion`, `signatureID`, `name` and `severity` are created automatically. The first three may use constants. When `signatureID` has no pattern or value, an `incremental` rule (event counter) is used.
 
-## Control Buttons
+## Actions Menu
 
-Below the list are buttons to manage the configuration:
+Use the **Actions** menu to manage the configuration:
 
-- **Save Config** – store the current mapping using the log file key.
-- **Preview Code ▸** – generate files in a temporary directory and display `cef_converter.py` in a new window.
-- **Generate Python** – generate `cef_converter.py` and `main_cef_converter.py` in a `generated_cef` folder next to the application.
+- **Save Config** (`Ctrl+S`) – store the current mapping using the log file key.
+- **Preview Code ▸** (`Ctrl+P`) – generate files in a temporary directory and display `cef_converter.py` in a new window.
+- **Generate Python** (`Ctrl+G`) – generate `cef_converter.py` and `main_cef_converter.py` in a `generated_cef` folder next to the application.
 
 Settings are saved automatically when the window is closed.
 

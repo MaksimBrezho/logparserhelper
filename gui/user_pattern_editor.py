@@ -14,12 +14,16 @@ class UserPatternEditorDialog(tk.Toplevel):
         self.title("User Patterns")
         menu_bar = tk.Menu(self)
         file_menu = tk.Menu(menu_bar, tearoff=0)
-        file_menu.add_command(label="Save", command=self._save_all)
+        file_menu.add_command(label="Save", command=self._save_all, accelerator="Ctrl+S")
         menu_bar.add_cascade(label="File", menu=file_menu)
         self.config(menu=menu_bar)
+        self.bind_all("<Control-s>", lambda e: self._save_all())
         self.patterns = [p for p in json_utils.load_all_patterns() if p.get("source") != "builtin"]
         self.selected_index = None
         self._build_ui()
+        self.bind_all("<Control-u>", lambda e: self._update_current())
+        self.bind_all("<Delete>", lambda e: self._delete_current())
+        self.bind_all("<Control-n>", lambda e: self._add_new())
 
     # ------------------------------------------------------------------
     def _build_ui(self):
@@ -84,7 +88,6 @@ class UserPatternEditorDialog(tk.Toplevel):
         ttk.Button(btns, text="Update", command=self._update_current).pack(side="left", padx=5)
         ttk.Button(btns, text="Delete", command=self._delete_current).pack(side="left", padx=5)
         ttk.Button(btns, text="Add", command=self._add_new).pack(side="left", padx=5)
-        ttk.Button(btns, text="Save", command=self._save_all).pack(side="right", padx=5)
 
     # ------------------------------------------------------------------
     def _on_select(self, event=None):
