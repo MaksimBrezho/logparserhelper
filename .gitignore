@@ -26,3 +26,5 @@ ENV/
 *.out
 *.tmp
 .pytest_cache/
+.coverage
+coverage.xml

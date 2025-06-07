@@ -27,6 +27,17 @@ def test_color_utils_roundtrip_and_generation():
     assert all(re.fullmatch(r"#[0-9a-f]{6}", c) for c in colors)
 
 
+def test_adjust_lightness_roundtrip():
+    lighter = color_utils.adjust_lightness("#808080", 1.5)
+    darker = color_utils.adjust_lightness("#808080", 0.5)
+    assert re.fullmatch(r"#[0-9a-f]{6}", lighter)
+    assert re.fullmatch(r"#[0-9a-f]{6}", darker)
+    # lighter color should have larger lightness than darker one
+    l_light = color_utils.hex_to_rgb(lighter)[0]  # r channel approximates lightness order
+    l_dark = color_utils.hex_to_rgb(darker)[0]
+    assert l_light > l_dark
+
+
 def test_json_utils_load_and_save_user_patterns(tmp_path, monkeypatch):
     user_file = tmp_path / "user.json"
     builtin_file = tmp_path / "builtin.json"
