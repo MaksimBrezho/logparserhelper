@@ -217,6 +217,15 @@ def load_conversion_config() -> dict:
             data = json.load(f)
             header = data.get("header", {})
             mappings = data.get("mappings", [])
+
+            # Replace saved pattern names with their regex text
+            pattern_map = {p.get("name"): p.get("regex") for p in load_all_patterns()}
+            for m in mappings:
+                name = m.get("pattern")
+                if name and "regex" not in m:
+                    regex = pattern_map.get(name)
+                    if regex:
+                        m["regex"] = regex
             return {"header": header, "mappings": mappings}
     except (FileNotFoundError, json.JSONDecodeError):
         return {"header": {}, "mappings": []}
@@ -226,7 +235,17 @@ def save_conversion_config(data: dict):
     """Save converter configuration."""
     try:
         os.makedirs(os.path.dirname(CONVERSION_CONFIG_PATH), exist_ok=True)
+        mappings = []
+        for m in data.get("mappings", []):
+            entry = m.copy()
+            # Only persist pattern names
+            if isinstance(entry.get("pattern"), dict):
+                entry["pattern"] = entry["pattern"].get("name")
+            entry.pop("regex", None)
+            mappings.append(entry)
+
+        to_save = {"header": data.get("header", {}), "mappings": mappings}
         with open(CONVERSION_CONFIG_PATH, "w", encoding="utf-8") as f:
-            json.dump(data, f, indent=4, ensure_ascii=False)
+            json.dump(to_save, f, indent=4, ensure_ascii=False)
     except Exception as e:
         logger.error("[Ошибка сохранения конвертер-конфига] %s", e)
