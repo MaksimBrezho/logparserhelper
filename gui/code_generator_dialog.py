@@ -99,7 +99,10 @@ class CodeGeneratorDialog(tk.Toplevel):
         for field in self.MANDATORY_FIELDS:
             names = by_field.get(field, [])
             if not names:
-                mappings.append({"cef": field, "pattern": "", "value": "", "transform": "none"})
+                if field == "signatureID":
+                    mappings.append({"cef": field, "rule": "incremental", "transform": "none"})
+                else:
+                    mappings.append({"cef": field, "pattern": "", "value": "", "transform": "none"})
             else:
                 for n in names:
                     transform = "time" if field in time_fields else "none"
@@ -117,9 +120,12 @@ class CodeGeneratorDialog(tk.Toplevel):
     def _merge_mappings(self, existing: list[dict], initial: list[dict]) -> list[dict]:
         """Merge mappings loaded from config with defaults based on current patterns."""
         merged = list(existing)
-        seen = {(m.get("cef"), m.get("pattern"), m.get("value")) for m in merged}
+        seen = {
+            (m.get("cef"), m.get("pattern"), m.get("value"), m.get("rule"))
+            for m in merged
+        }
         for m in initial:
-            key = (m.get("cef"), m.get("pattern"), m.get("value"))
+            key = (m.get("cef"), m.get("pattern"), m.get("value"), m.get("rule"))
             if key not in seen:
                 merged.append(m)
                 seen.add(key)
@@ -258,6 +264,11 @@ class CodeGeneratorDialog(tk.Toplevel):
             self._refresh_mapping_list()
             self._save_config()
 
+    def _on_remove_field(self, idx):
+        del self.mappings[idx]
+        self._refresh_mapping_list()
+        self._save_config()
+
     def _gather_mappings(self):
         result = []
         for m in self.mappings:
@@ -265,6 +276,8 @@ class CodeGeneratorDialog(tk.Toplevel):
                 result.append({"cef": m["cef"], "pattern": m["pattern"], "group": 0, "transform": m["transform"]})
             elif m.get("value"):
                 result.append({"cef": m["cef"], "value": m["value"], "transform": m["transform"]})
+            elif m.get("rule"):
+                result.append({"cef": m["cef"], "rule": m["rule"], "transform": m["transform"]})
         return result
 
 
@@ -308,7 +321,15 @@ class CodeGeneratorDialog(tk.Toplevel):
         for child in self.mapping_list.winfo_children():
             child.destroy()
 
-        headers = ["CEF Field", "Pattern", "Regex", "Transform", "Example", "Result"]
+        headers = [
+            "CEF Field",
+            "Pattern",
+            "Regex",
+            "Transform",
+            "Example",
+            "Result",
+            "",
+        ]
         for col, text in enumerate(headers):
             ttk.Label(self.mapping_list, text=text, font=("Segoe UI", 9, "bold")).grid(row=0, column=col, sticky="w", padx=2)
 
@@ -321,9 +342,16 @@ class CodeGeneratorDialog(tk.Toplevel):
         used = {}
 
         for idx, m in enumerate(self.mappings, start=1):
-            regex = pattern_map.get(m.get("pattern"), {}).get("regex", "")
-            example = self._find_example(regex) if regex else m.get("value", "")
-            transformed = self._get_transformed_example(regex, m.get("transform", "none"), m.get("value", ""))
+            if m.get("rule") == "incremental":
+                regex = ""
+                example = "automatic"
+                transformed = "automatic"
+            else:
+                regex = pattern_map.get(m.get("pattern"), {}).get("regex", "")
+                example = self._find_example(regex) if regex else m.get("value", "")
+                transformed = self._get_transformed_example(
+                    regex, m.get("transform", "none"), m.get("value", "")
+                )
 
             label = m["cef"]
             if counts.get(label, 0) > 1:
@@ -337,14 +365,22 @@ class CodeGeneratorDialog(tk.Toplevel):
                 combo.bind("<<ComboboxSelected>>", lambda e, i=idx-1, v=var: self._on_pattern_changed(i, v))
             else:
                 var = tk.StringVar(value=m.get("value", ""))
-                entry = ttk.Entry(self.mapping_list, textvariable=var)
-                entry.grid(row=idx, column=1, sticky="ew", padx=2)
-                entry.bind("<KeyRelease>", lambda e, i=idx-1, v=var: self._on_value_changed(i, v))
+                if m.get("rule") == "incremental":
+                    ttk.Label(self.mapping_list, text="automatic").grid(row=idx, column=1, sticky="w", padx=2)
+                else:
+                    entry = ttk.Entry(self.mapping_list, textvariable=var)
+                    entry.grid(row=idx, column=1, sticky="ew", padx=2)
+                    entry.bind("<KeyRelease>", lambda e, i=idx-1, v=var: self._on_value_changed(i, v))
             ttk.Label(self.mapping_list, text=regex).grid(row=idx, column=2, sticky="w", padx=2)
             btn_text = m["transform"] if isinstance(m.get("transform"), str) else "custom"
-            ttk.Button(self.mapping_list, text=btn_text, command=lambda i=idx-1: self._on_edit_transform(i)).grid(row=idx, column=3, sticky="w", padx=2)
+            state = "normal"
+            if not m.get("pattern") and m.get("rule") != "incremental" and m["cef"] in {"deviceVendor", "deviceProduct", "deviceVersion", "signatureID"}:
+                state = "disabled"
+            ttk.Button(self.mapping_list, text=btn_text, state=state, command=lambda i=idx-1: self._on_edit_transform(i)).grid(row=idx, column=3, sticky="w", padx=2)
             ttk.Label(self.mapping_list, text=example).grid(row=idx, column=4, sticky="w", padx=2)
             ttk.Label(self.mapping_list, text=transformed).grid(row=idx, column=5, sticky="w", padx=2)
+            if m["cef"] not in self.MANDATORY_FIELDS:
+                ttk.Button(self.mapping_list, text="✖", width=2, command=lambda i=idx-1: self._on_remove_field(i)).grid(row=idx, column=6, sticky="e", padx=2)
 
         self.mapping_list.grid_columnconfigure(1, weight=1)
 
