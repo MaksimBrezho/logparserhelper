@@ -20,14 +20,15 @@ class CodeGeneratorDialog(tk.Toplevel):
         "severity",
     ]
 
-    def __init__(self, parent, per_log_patterns=None, logs=None):
+    def __init__(self, parent, per_log_patterns=None, logs=None, log_key=None):
         super().__init__(parent)
         self.title("CEF Code Generator Dialog")
         self.minsize(700, 500)
         self.per_log_patterns = per_log_patterns or []
         self.logs = logs or []
+        self.log_key = log_key
 
-        config = json_utils.load_conversion_config()
+        config = json_utils.load_conversion_config(log_key)
         self.mappings = config.get("mappings") or self._build_initial_mappings()
         self._build_ui()
         header_data = config.get("header", {})
@@ -338,7 +339,7 @@ class CodeGeneratorDialog(tk.Toplevel):
     def _save_config(self):
         header = {k: v.get() for k, v in self.header_vars.items()}
         data = {"header": header, "mappings": self.mappings}
-        json_utils.save_conversion_config(data)
+        json_utils.save_conversion_config(data, self.log_key)
 
     def _on_close(self):
         self._save_config()

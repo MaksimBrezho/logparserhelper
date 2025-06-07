@@ -10,6 +10,14 @@ os.makedirs(USER_DATA_DIR, exist_ok=True)
 
 CONVERSION_CONFIG_PATH = os.path.join(USER_DATA_DIR, "conversion_config.json")
 
+
+def get_conversion_config_path(log_key: str | None = None) -> str:
+    """Return path for a conversion config associated with the given log key."""
+    if log_key:
+        safe = "".join(c if c.isalnum() or c in "-_" else "_" for c in log_key)
+        return os.path.join(USER_DATA_DIR, f"conversion_config_{safe}.json")
+    return CONVERSION_CONFIG_PATH
+
 USER_PATTERNS_PATH = os.path.join(USER_DATA_DIR, "patterns_user.json")
 BUILTIN_PATTERNS_PATH = os.path.join("data", "patterns_builtin.json")
 LOG_KEY_MAP_PATH = os.path.join("data", "log_key_map.json")
@@ -210,13 +218,15 @@ def load_cef_field_keys():
     return [fld.get("key") for fld in load_cef_fields() if "key" in fld]
 
 
-def load_conversion_config() -> dict:
-    """Load converter configuration."""
+def load_conversion_config(log_key: str | None = None) -> dict:
+    """Load converter configuration for the given log key."""
+    path = get_conversion_config_path(log_key)
     try:
-        with open(CONVERSION_CONFIG_PATH, "r", encoding="utf-8") as f:
+        with open(path, "r", encoding="utf-8") as f:
             data = json.load(f)
             header = data.get("header", {})
             mappings = data.get("mappings", [])
+            log_key_in_file = data.get("log_key")
 
             # Replace saved pattern names with their regex text
             pattern_map = {p.get("name"): p.get("regex") for p in load_all_patterns()}
@@ -226,15 +236,19 @@ def load_conversion_config() -> dict:
                     regex = pattern_map.get(name)
                     if regex:
                         m["regex"] = regex
-            return {"header": header, "mappings": mappings}
+            result = {"header": header, "mappings": mappings}
+            if log_key_in_file:
+                result["log_key"] = log_key_in_file
+            return result
     except (FileNotFoundError, json.JSONDecodeError):
         return {"header": {}, "mappings": []}
 
 
-def save_conversion_config(data: dict):
-    """Save converter configuration."""
+def save_conversion_config(data: dict, log_key: str | None = None):
+    """Save converter configuration for the given log key."""
+    path = get_conversion_config_path(log_key)
     try:
-        os.makedirs(os.path.dirname(CONVERSION_CONFIG_PATH), exist_ok=True)
+        os.makedirs(os.path.dirname(path), exist_ok=True)
         mappings = []
         for m in data.get("mappings", []):
             entry = m.copy()
@@ -245,7 +259,9 @@ def save_conversion_config(data: dict):
             mappings.append(entry)
 
         to_save = {"header": data.get("header", {}), "mappings": mappings}
-        with open(CONVERSION_CONFIG_PATH, "w", encoding="utf-8") as f:
+        if log_key:
+            to_save["log_key"] = log_key
+        with open(path, "w", encoding="utf-8") as f:
             json.dump(to_save, f, indent=4, ensure_ascii=False)
     except Exception as e:
         logger.error("[Ошибка сохранения конвертер-конфига] %s", e)
