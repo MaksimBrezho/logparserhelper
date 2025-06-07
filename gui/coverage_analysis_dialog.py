@@ -3,6 +3,7 @@ from tkinter import ttk
 
 from utils.i18n import translate as _
 from utils.window_utils import set_window_icon
+from utils.text_utils import line_number_ranges
 
 
 class CoverageAnalysisDialog(tk.Toplevel):
@@ -20,7 +21,7 @@ class CoverageAnalysisDialog(tk.Toplevel):
         for field, (percent, missing) in field_stats.items():
             line = f"{field}: {percent:.1f}%"
             if missing:
-                nums = ", ".join(str(n) for n in missing)
+                nums = line_number_ranges(missing)
                 line += _(" (missing: {lines})").format(lines=nums)
             text.insert("end", line + "\n")
         text.config(state="disabled")

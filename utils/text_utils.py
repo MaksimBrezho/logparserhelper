@@ -37,6 +37,26 @@ def count_significant_chars(text: str) -> int:
     return len("".join(ch for ch in text if not ch.isspace()))
 
 
+def line_number_ranges(nums: List[int]) -> str:
+    """Return comma-separated line number ranges.
+
+    Consecutive numbers are collapsed into ``start-end`` form.
+    """
+    if not nums:
+        return ""
+    nums = sorted(set(nums))
+    ranges = []
+    start = prev = nums[0]
+    for n in nums[1:]:
+        if n == prev + 1:
+            prev = n
+        else:
+            ranges.append(f"{start}-{prev}" if start != prev else str(start))
+            start = prev = n
+    ranges.append(f"{start}-{prev}" if start != prev else str(start))
+    return ", ".join(ranges)
+
+
 def compute_char_coverage(
     logs: List[str], matches_by_line: Dict[int, List[Dict]], active_names: set
 ) -> float:
