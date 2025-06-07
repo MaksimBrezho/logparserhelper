@@ -147,3 +147,17 @@ def test_merge_replaces_placeholder(monkeypatch):
     assert len(sig) == 1 and sig[0].get("pattern") == "SigPat"
     assert len(name) == 1 and name[0].get("pattern") == "NamePat"
     assert len(sev) == 1 and sev[0].get("pattern") == "SevPat"
+
+
+def test_merge_skips_placeholder_when_constant_exists(monkeypatch):
+    dlg = CodeGeneratorDialog.__new__(CodeGeneratorDialog)
+    dlg.per_log_patterns = []
+    monkeypatch.setattr(json_utils, "load_cef_field_keys", lambda: ["deviceVendor"])
+    monkeypatch.setattr(json_utils, "load_cef_fields", lambda: [{"key": "deviceVendor"}])
+
+    existing = [{"cef": "deviceVendor", "value": "ACME", "transform": "none"}]
+    initial = CodeGeneratorDialog._build_initial_mappings(dlg)
+    merged = CodeGeneratorDialog._merge_mappings(dlg, existing, initial)
+
+    vendor = [m for m in merged if m["cef"] == "deviceVendor"]
+    assert vendor == existing
