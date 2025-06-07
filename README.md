@@ -76,4 +76,9 @@ gui/    – Tkinter user interface modules
 data/   – built‑in patterns, CEF field definitions and sample logs
 ```
 
-Feel free to explore and extend the utilities for your own log formats.
+Mappings created automatically for CEF fields of the `Time` category
+use this transformation by default.
+
+## UML Diagrams
+
+Automatically generated class and package diagrams are in [docs/uml](docs/uml).
