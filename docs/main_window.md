@@ -42,7 +42,7 @@ Located under the text area and includes:
 
 | Element | Purpose |
 |---------|---------|
-| **Commands ▾** | Drop-down with **Load Log** (`Ctrl+O`), **Save Patterns** (`Ctrl+S`), **Code Generator** (`Ctrl+G`) and **Edit User Patterns** (`Ctrl+U`). |
+| **Commands ▾** | Drop-down with **Load Log** (`Ctrl+O`), **Save Patterns** (`Ctrl+S`), **Code Generator** (`Ctrl+G`), **Coverage Analysis** (`Ctrl+L`) and **Edit User Patterns** (`Ctrl+U`). |
 | **← Prev** / **Next →** | Switch pages when viewing logs page by page (`Alt+Left`/`Alt+Right`). |
 | `Lines per page` | Input/spin box for the number of lines per page. |
 | **Page X of Y** | Shows the current page and total pages. |
@@ -63,10 +63,11 @@ Located under the text area and includes:
 
 ## Related Dialogs
 
-The main window can open two additional dialogs:
+The main window can open three additional dialogs:
 
 1. **Pattern Wizard** (`PatternWizardDialog`) — interactive wizard for creating regular expressions.
 2. **Code Generator Dialog** (`CodeGeneratorDialog`) — interface for configuring log-to-CEF conversion rules and generating Python code.
+3. **Coverage Analysis Dialog** (`CoverageAnalysisDialog`) — shows overall coverage and which lines lack required CEF fields.
 
 ## Summary
 
