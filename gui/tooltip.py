@@ -9,10 +9,14 @@ class ToolTip:
         self.tipwindow = None
         self.id = None
         self.delay = delay
+        self.text = None
+        self.pos = (0, 0)
 
     def showtip(self, text, x, y):
         if self.tipwindow or not text:
             return
+        self.text = text
+        self.pos = (x, y)
         self.tipwindow = tw = tk.Toplevel(self.widget)
         set_window_icon(tw)
         tw.wm_overrideredirect(1)
@@ -26,12 +30,23 @@ class ToolTip:
         if self.tipwindow:
             self.tipwindow.destroy()
         self.tipwindow = None
+        self.text = None
 
     def schedule(self, text, x, y):
-        self.unschedule()
-        self.id = self.widget.after(self.delay, self.showtip, text, x, y)
+        if self.id:
+            self.widget.after_cancel(self.id)
+            self.id = None
+
+        if self.tipwindow and self.text == text:
+            self.pos = (x, y)
+            self.tipwindow.wm_geometry(f"+{x+10}+{y+10}")
+        else:
+            if self.tipwindow:
+                self.hidetip()
+            self.id = self.widget.after(self.delay, self.showtip, text, x, y)
 
     def unschedule(self):
         if self.id:
             self.widget.after_cancel(self.id)
+            self.id = None
         self.hidetip()
