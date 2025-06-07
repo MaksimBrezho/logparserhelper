@@ -1,6 +1,4 @@
-<p align="right"><a href="main_window.md">🇬🇧 English version</a></p>
-
-# 🪟 Главное окно Log Parser Helper
+# 🖥️ Главное окно Log Parser Helper
 
 В этом документе описывается назначение и элементы главного окна приложения.
 
