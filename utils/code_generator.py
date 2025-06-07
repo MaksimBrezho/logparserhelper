@@ -224,26 +224,28 @@ class LogToCEFConverter:
 """
 
     comment_main = f"# Runner for log: {log_name}" if log_name else "# Runner"
-    main_code = dedent(f"""
-    {comment_main}
-    from cef_converter{suffix} import LogToCEFConverter
+    main_code = dedent(
+        f"""
+{comment_main}
+from cef_converter{suffix} import LogToCEFConverter
 
-    def main():
-        conv = LogToCEFConverter()
-        with open('input.log', 'r', encoding='utf-8') as fin, \
-             open('output.cef', 'w', encoding='utf-8') as fout, \
-             open('error.log', 'w', encoding='utf-8') as ferr:
-            for line in fin:
-                line = line.rstrip('\n')
-                cef = conv.convert_line(line)
-                fout.write(cef + '\n')
-                cov = conv.coverage_score(line)
-                if cov < 100.0:
-                    conv.log_incomplete_coverage(line, cov, ferr)
+def main():
+    conv = LogToCEFConverter()
+    with open('input.log', 'r', encoding='utf-8') as fin, \
+         open('output.cef', 'w', encoding='utf-8') as fout, \
+         open('error.log', 'w', encoding='utf-8') as ferr:
+        for line in fin:
+            line = line.rstrip('\\n')
+            cef = conv.convert_line(line)
+            fout.write(cef + '\\n')
+            cov = conv.coverage_score(line)
+            if cov < 100.0:
+                conv.log_incomplete_coverage(line, cov, ferr)
 
-    if __name__ == '__main__':
-        main()
-    """)
+if __name__ == '__main__':
+    main()
+"""
+    ).lstrip()
 
     with open(converter_path, 'w', encoding='utf-8') as f:
         f.write(converter_code)
