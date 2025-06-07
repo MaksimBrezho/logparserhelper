@@ -96,3 +96,22 @@ def test_initial_mappings_time_transform(monkeypatch):
     tran = [m["transform"] for m in mappings if m["cef"] == "rt"]
     assert tran == ["time"]
 
+
+def test_dialog_merges_new_patterns(monkeypatch):
+    dlg = CodeGeneratorDialog.__new__(CodeGeneratorDialog)
+    dlg.per_log_patterns = [{"name": "NewPat", "regex": "n", "fields": ["deviceVendor"]}]
+    dlg.logs = []
+    dlg.log_key = "app"
+
+    config = {
+        "header": {},
+        "mappings": [{"cef": "deviceVendor", "pattern": "OldPat", "transform": "none", "value": ""}],
+    }
+    monkeypatch.setattr(json_utils, "load_cef_fields", lambda: [{"key": "deviceVendor"}])
+
+    initial = CodeGeneratorDialog._build_initial_mappings(dlg)
+    merged = CodeGeneratorDialog._merge_mappings(dlg, config["mappings"], initial)
+
+    names = {m.get("pattern") for m in merged if m.get("cef") == "deviceVendor"}
+    assert names == {"OldPat", "NewPat"}
+

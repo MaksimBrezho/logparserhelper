@@ -29,7 +29,9 @@ class CodeGeneratorDialog(tk.Toplevel):
         self.log_key = log_key
 
         config = json_utils.load_conversion_config(log_key)
-        self.mappings = config.get("mappings") or self._build_initial_mappings()
+        loaded = config.get("mappings") or []
+        initial = self._build_initial_mappings()
+        self.mappings = self._merge_mappings(loaded, initial)
         self._build_ui()
         header_data = config.get("header", {})
         for key, var in self.header_vars.items():
@@ -111,6 +113,17 @@ class CodeGeneratorDialog(tk.Toplevel):
                 mappings.append({"cef": field, "pattern": n, "value": "", "transform": transform})
 
         return mappings
+
+    def _merge_mappings(self, existing: list[dict], initial: list[dict]) -> list[dict]:
+        """Merge mappings loaded from config with defaults based on current patterns."""
+        merged = list(existing)
+        seen = {(m.get("cef"), m.get("pattern"), m.get("value")) for m in merged}
+        for m in initial:
+            key = (m.get("cef"), m.get("pattern"), m.get("value"))
+            if key not in seen:
+                merged.append(m)
+                seen.add(key)
+        return merged
 
     # ------------------------------------------------------------------
     # helpers
