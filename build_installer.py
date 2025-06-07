@@ -17,6 +17,7 @@ def build():
         "--noconsole",
         "--onefile",
         f"--icon={icon_path}",
+        "--name=ALLtoCEF",
         os.path.join(root_dir, "main.py"),
     ]
     for src, dest in data_files:
