@@ -9,6 +9,7 @@ def build():
     data_files = [
         ("data/cef_fields.json", "data"),
         ("data/patterns_builtin.json", "data"),
+        ("data/translations.json", "data"),
         ("icon/ALLtoCEF.ico", "icon"),
     ]
     pyinstaller_cmd = [
