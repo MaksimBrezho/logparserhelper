@@ -11,6 +11,7 @@ class ToolTip:
         self.delay = delay
         self.text = None
         self.pos = (0, 0)
+        self.label = None
 
     def showtip(self, text, x, y):
         if self.tipwindow or not text:
@@ -21,28 +22,36 @@ class ToolTip:
         set_window_icon(tw)
         tw.wm_overrideredirect(1)
         tw.wm_geometry(f"+{x+10}+{y+10}")
-        label = tk.Label(tw, text=text, justify=tk.LEFT,
-                         background="#ffffe0", relief=tk.SOLID, borderwidth=1,
-                         font=("tahoma", "8", "normal"))
-        label.pack(ipadx=1)
+        self.label = tk.Label(
+            tw,
+            text=text,
+            justify=tk.LEFT,
+            background="#ffffe0",
+            relief=tk.SOLID,
+            borderwidth=1,
+            font=("tahoma", "8", "normal"),
+        )
+        self.label.pack(ipadx=1)
 
     def hidetip(self):
         if self.tipwindow:
             self.tipwindow.destroy()
         self.tipwindow = None
         self.text = None
+        self.label = None
 
     def schedule(self, text, x, y):
         if self.id:
             self.widget.after_cancel(self.id)
             self.id = None
 
-        if self.tipwindow and self.text == text:
+        if self.tipwindow:
             self.pos = (x, y)
             self.tipwindow.wm_geometry(f"+{x+10}+{y+10}")
+            if self.text != text and self.label:
+                self.text = text
+                self.label.config(text=text)
         else:
-            if self.tipwindow:
-                self.hidetip()
             self.id = self.widget.after(self.delay, self.showtip, text, x, y)
 
     def unschedule(self):
@@ -50,3 +59,4 @@ class ToolTip:
             self.widget.after_cancel(self.id)
             self.id = None
         self.hidetip()
+
