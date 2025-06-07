@@ -87,4 +87,4 @@ Jieming Zhu, Shilin He, Pinjia He, Jinyang Liu, Michael R. Lyu. [Loghub: A Large
 
 ## Лицензия
 
-Проект распространяется под [лицензией MIT](LICENSE).
+Проект распространяется под [не-коммерческой лицензией](LICENSE).
