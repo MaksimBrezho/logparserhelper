@@ -1,6 +1,5 @@
 import tkinter as tk
 from gui.app_window import AppWindow
-import os
 from utils.window_utils import set_window_icon
 
 def main():
