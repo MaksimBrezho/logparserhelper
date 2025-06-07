@@ -37,15 +37,15 @@ class LogGeneratorWindow(tk.Toplevel):
     def update_tree(self):
         self.tree.delete(*self.tree.get_children())
         for tr in self.transforms:
-            pattern = tr.get("pattern", "")
+            pattern_text = tr.get("pattern", "")
             sample = tr.get("sample", "")
             replacement = tr.get("replacement", "<DATE>")
             try:
-                example = re.sub(pattern, replacement, sample)
+                example = re.sub(pattern_text, replacement, sample)
             except re.error:
                 example = sample
             enabled_marker = "✓" if tr.get("enabled", True) else ""
-            self.tree.insert("", "end", values=(enabled_marker, pattern, example))
+            self.tree.insert("", "end", values=(enabled_marker, pattern_text, example))
 
     def get_selected_index(self):
         selected = self.tree.selection()

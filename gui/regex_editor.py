@@ -41,11 +41,11 @@ class RegexEditor(tk.Toplevel):
         name = simpledialog.askstring("Название шаблона", "Введите название шаблона:")
         if not name:
             return
-        pattern = simpledialog.askstring("Регулярное выражение", "Введите шаблон регулярного выражения:")
-        if not pattern:
+        pattern_text = simpledialog.askstring("Регулярное выражение", "Введите шаблон регулярного выражения:")
+        if not pattern_text:
             return
 
-        self.patterns.append({"name": name, "pattern": pattern})
+        self.patterns.append({"name": name, "pattern": pattern_text})
         save_patterns({"date_patterns": self.patterns})
         self.update_tree()
 
@@ -60,11 +60,11 @@ class RegexEditor(tk.Toplevel):
         new_name = simpledialog.askstring("Название шаблона", "Измените название шаблона:", initialvalue=current["name"])
         if not new_name:
             return
-        new_pattern = simpledialog.askstring("Регулярное выражение", "Измените шаблон:", initialvalue=current["pattern"])
-        if not new_pattern:
+        new_pattern_text = simpledialog.askstring("Регулярное выражение", "Измените шаблон:", initialvalue=current["pattern"])
+        if not new_pattern_text:
             return
 
-        self.patterns[idx] = {"name": new_name, "pattern": new_pattern}
+        self.patterns[idx] = {"name": new_name, "pattern": new_pattern_text}
         save_patterns({"date_patterns": self.patterns})
         self.update_tree()
 
