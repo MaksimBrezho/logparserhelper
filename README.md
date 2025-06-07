@@ -56,7 +56,8 @@ python build_installer.py
 ```
 
 The resulting installer binary will be placed in the `dist` directory and will
-use the icon from `icon/ALLtoCEF.ico`.
+use the icon from `icon/ALLtoCEF.ico`. The helper script also bundles the
+required built-in pattern and CEF data files.
 
 ## Running the tests
 
