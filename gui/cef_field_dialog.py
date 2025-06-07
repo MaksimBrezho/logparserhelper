@@ -1,5 +1,6 @@
 import tkinter as tk
 from tkinter import ttk
+from utils.i18n import translate as _
 from utils.window_utils import set_window_icon
 
 
@@ -9,7 +10,7 @@ class CEFFieldDialog(tk.Toplevel):
     def __init__(self, parent, cef_fields, pattern_name: str, initial=None):
         super().__init__(parent)
         set_window_icon(self)
-        self.title(f"CEF Fields for {pattern_name}")
+        self.title(_(f"CEF Fields for {pattern_name}"))
         self.result = None
         self.var_map = {}
         self.cef_fields = cef_fields or []
@@ -40,7 +41,7 @@ class CEFFieldDialog(tk.Toplevel):
         btns = ttk.Frame(self)
         btns.pack(pady=5)
         ttk.Button(btns, text="OK", command=self._on_ok).pack(side="left", padx=5)
-        ttk.Button(btns, text="Cancel", command=self._on_cancel).pack(side="left", padx=5)
+        ttk.Button(btns, text=_("Cancel"), command=self._on_cancel).pack(side="left", padx=5)
 
     def _on_ok(self):
         self.result = [k for k, v in self.var_map.items() if v.get()]
