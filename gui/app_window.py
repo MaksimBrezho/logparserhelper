@@ -1,5 +1,6 @@
 import tkinter as tk
 from tkinter import filedialog, ttk, messagebox, simpledialog
+from gui.ask_string_dialog import AskStringDialog
 from utils.i18n import translate as _, set_language, add_callback
 from utils.json_utils import (
     load_all_patterns,
@@ -409,11 +410,14 @@ class AppWindow(tk.Frame):
             return
 
         default_name = get_log_name_for_file(self.source_path) or os.path.basename(self.source_path)
-        log_name = simpledialog.askstring(
-            "Set Name", "Enter name for per-log patterns:",
+        dlg = AskStringDialog(
+            self,
+            _("Set Name"),
+            _("Enter name for per-log patterns:"),
             initialvalue=default_name,
-            parent=self
         )
+        self.wait_window(dlg)
+        log_name = dlg.result
         if log_name is None:
             return
 
