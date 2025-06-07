@@ -55,8 +55,8 @@ class DummyCheckbutton:
 
 def test_on_digit_mode_change():
     wiz = PatternWizardDialog.__new__(PatternWizardDialog)
-    wiz.digit_mode_values = {"Фиксированная длина": "always_fixed_length"}
-    wiz.digit_mode_display_var = DummyVar("Фиксированная длина")
+    wiz.digit_mode_values = {"Fixed length": "always_fixed_length"}
+    wiz.digit_mode_display_var = DummyVar("Fixed length")
     wiz.digit_mode_var = DummyVar()
     PatternWizardDialog._on_digit_mode_change(wiz)
     assert wiz.digit_mode_var.get() == "always_fixed_length"

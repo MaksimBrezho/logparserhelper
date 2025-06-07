@@ -7,7 +7,7 @@ class CEFFieldDialog(tk.Toplevel):
 
     def __init__(self, parent, cef_fields, pattern_name: str, initial=None):
         super().__init__(parent)
-        self.title(f"CEF-поля для {pattern_name}")
+        self.title(f"CEF Fields for {pattern_name}")
         self.result = None
         self.var_map = {}
         self.cef_fields = cef_fields or []

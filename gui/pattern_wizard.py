@@ -13,19 +13,19 @@ from utils.json_utils import save_user_pattern, save_per_log_pattern
 
 
 SNIPPETS = [
-    ("Одно слово (любые символы, кроме пробелов)", r"\S+"),
-    ("Одно слово только из букв", r"[a-zA-Z]+"),
-    ("Одно слово только из цифр", r"\d+"),
-    ("Слово из букв и цифр", r"[a-zA-Z0-9]+"),
-    ("Слово из любых символов", r"[^ \t\n\r\f\v]+"),
-    ("Строка до конца строки", r".*"),
-    ("Строка до конца строки (нежадно)", r".*?"),
-    ("Одно число фиксированной длины (3)", r"\d{3}"),
-    ("Одно число, минимум N цифр", r"\d{2,}"),
-    ("Символы до двоеточия", r"[^:]+"),
-    ("Фрагмент в квадратных скобках", r"\[[^\]]+\]"),
-    ("Фрагмент в круглых скобках", r"\([^)]+\)"),
-    ("Линия с тегом", r"[a-zA-Z0-9._-]+:")
+    ("One word (non-space characters)", r"\S+"),
+    ("Letters only word", r"[a-zA-Z]+"),
+    ("Digits only", r"\d+"),
+    ("Alphanumeric word", r"[a-zA-Z0-9]+"),
+    ("Word of any characters", r"[^ \t\n\r\f\v]+"),
+    ("Line to end", r".*"),
+    ("Line to end (non-greedy)", r".*?"),
+    ("Fixed length number (3)", r"\d{3}"),
+    ("Number with at least N digits", r"\d{2,}"),
+    ("Chars until colon", r"[^:]+"),
+    ("Segment in []", r"\[[^\]]+\]"),
+    ("Segment in ()", r"\([^)]+\)"),
+    ("Line with tag", r"[a-zA-Z0-9._-]+:")
 ]
 
 
@@ -34,14 +34,14 @@ class PatternWizardDialog(tk.Toplevel):
     def __init__(self, parent, selected_lines, context_lines, cef_fields, source_file, log_name, categories=None, fragment_context=None):
 
         super().__init__(parent)
-        self.title("Создание нового паттерна")
+        self.title("Create New Pattern")
         # Минимальный размер окна, но пользователь может растягивать его
         self.minsize(800, 600)
 
         menu_bar = tk.Menu(self)
         file_menu = tk.Menu(menu_bar, tearoff=0)
-        file_menu.add_command(label="Сохранить", command=self._save, accelerator="Ctrl+S")
-        menu_bar.add_cascade(label="Файл", menu=file_menu)
+        file_menu.add_command(label="Save", command=self._save, accelerator="Ctrl+S")
+        menu_bar.add_cascade(label="File", menu=file_menu)
         self.config(menu=menu_bar)
         self.bind_all("<Control-s>", lambda e: self._save())
 
@@ -81,13 +81,13 @@ class PatternWizardDialog(tk.Toplevel):
         self.regex_var = tk.StringVar()
         self.case_insensitive = tk.BooleanVar()
         self.digit_mode_values = {
-            "Стандартный": "standard",
-            "Фиксированная длина": "always_fixed_length",
-            "Всегда \\d+": "always_plus",
-            "С выставлением минимальной длины": "min_length",
-            "Фикс. или мин.": "fixed_and_min",
+            "Standard": "standard",
+            "Fixed length": "always_fixed_length",
+            "Always \\d+": "always_plus",
+            "Set minimum length": "min_length",
+            "Fixed or min.": "fixed_and_min",
         }
-        self.digit_mode_display_var = tk.StringVar(value="Фиксированная длина")
+        self.digit_mode_display_var = tk.StringVar(value="Fixed length")
         self.digit_mode_var = tk.StringVar(value="always_fixed_length")
         self.digit_min_length_var = tk.IntVar(value=1)
         self.merge_text_tokens_var = tk.BooleanVar(value=True)
@@ -102,7 +102,7 @@ class PatternWizardDialog(tk.Toplevel):
         self._build_ui()
         total_pages = (len(self.context_lines) - 1) // self.page_size + 1
         self.total_pages = total_pages
-        self.page_label_var.set(f"Страница {self.current_page + 1} из {total_pages}")
+        self.page_label_var.set(f"Page {self.current_page + 1} of {total_pages}")
         self._generate_regex()
 
     def _build_ui(self):
@@ -110,10 +110,10 @@ class PatternWizardDialog(tk.Toplevel):
         top_frame = ttk.Frame(self)
         top_frame.pack(fill="x", pady=5)
 
-        ttk.Label(top_frame, text="Имя:").pack(side="left")
+        ttk.Label(top_frame, text="Name:").pack(side="left")
         ttk.Entry(top_frame, textvariable=self.name_var, width=20).pack(side="left", padx=5)
 
-        ttk.Label(top_frame, text="Категория:").pack(side="left")
+        ttk.Label(top_frame, text="Category:").pack(side="left")
 
         self.category_label = ttk.Label(top_frame, textvariable=self.category_var, width=20)
         self.category_label.pack(side="left", padx=5)
@@ -127,7 +127,7 @@ class PatternWizardDialog(tk.Toplevel):
 
         toggle_adv = ttk.Checkbutton(
             left_frame,
-            text="Показать дополнительные параметры",
+            text="Show advanced options",
             variable=self.show_advanced,
             command=self._toggle_advanced,
         )
@@ -135,41 +135,41 @@ class PatternWizardDialog(tk.Toplevel):
 
         self.advanced_frame = ttk.Frame(left_frame)
 
-        ci = ttk.Checkbutton(self.advanced_frame, text="Игнорировать регистр", variable=self.case_insensitive)
+        ci = ttk.Checkbutton(self.advanced_frame, text="Ignore case", variable=self.case_insensitive)
         ci.pack(anchor="w", pady=2)
 
         row = ttk.Frame(self.advanced_frame)
         row.pack(anchor="w")
-        ttk.Label(row, text="Режим чисел:").pack(side="left")
+        ttk.Label(row, text="Number mode:").pack(side="left")
         dm = ttk.Combobox(row, textvariable=self.digit_mode_display_var, values=list(self.digit_mode_values.keys()), width=22, state="readonly")
         dm.pack(side="left", padx=2)
         self.digit_mode_display_var.trace_add("write", lambda *_: self._on_digit_mode_change())
 
         row = ttk.Frame(self.advanced_frame)
         row.pack(anchor="w")
-        ttk.Label(row, text="Мин. длина числа:").pack(side="left")
+        ttk.Label(row, text="Min number length:").pack(side="left")
         ml = ttk.Spinbox(row, from_=1, to=10, textvariable=self.digit_min_length_var, width=5)
         ml.pack(side="left", padx=2)
 
-        mt = ttk.Checkbutton(self.advanced_frame, text="Объединять текст", variable=self.merge_text_tokens_var)
+        mt = ttk.Checkbutton(self.advanced_frame, text="Merge text", variable=self.merge_text_tokens_var)
         mt.pack(anchor="w", pady=2)
-        pa = ttk.Checkbutton(self.advanced_frame, text="Использовать |", variable=self.prefer_alternatives_var)
+        pa = ttk.Checkbutton(self.advanced_frame, text="Use |", variable=self.prefer_alternatives_var)
         pa.pack(anchor="w", pady=2)
-        bp = ttk.Checkbutton(self.advanced_frame, text="Префикс. слияние", variable=self.merge_by_prefix_var)
+        bp = ttk.Checkbutton(self.advanced_frame, text="Prefix merge", variable=self.merge_by_prefix_var)
         bp.pack(anchor="w", pady=2)
 
         row = ttk.Frame(self.advanced_frame)
         row.pack(anchor="w")
-        ttk.Label(row, text="Макс. вариантов:").pack(side="left")
+        ttk.Label(row, text="Max options:").pack(side="left")
         mx = ttk.Spinbox(row, from_=1, to=20, textvariable=self.max_enum_options_var, width=5)
         mx.pack(side="left", padx=2)
 
         row = ttk.Frame(self.advanced_frame)
         row.pack(anchor="w")
-        ttk.Label(row, text="Окно слева:").pack(side="left")
+        ttk.Label(row, text="Window left:").pack(side="left")
         wl = ttk.Entry(row, textvariable=self.window_left_var, width=8)
         wl.pack(side="left", padx=2)
-        ttk.Label(row, text="Окно справа:").pack(side="left")
+        ttk.Label(row, text="Window right:").pack(side="left")
         wr = ttk.Entry(row, textvariable=self.window_right_var, width=8)
         wr.pack(side="left", padx=2)
 
@@ -177,26 +177,26 @@ class PatternWizardDialog(tk.Toplevel):
         right_frame.pack(side="left", fill="both", expand=True)
 
         # Tooltips
-        self._add_tip(ci, "Регулярное выражение будет нечувствительно к регистру")
-        self._add_tip(dm, "Как обрабатывать числа в строках")
-        self._add_tip(ml, "Минимальная длина числа при генерации")
-        self._add_tip(mt, "Объединять разные слова в один блок")
-        self._add_tip(pa, "Предпочитать варианты через |")
-        self._add_tip(bp, "Объединять по общему префиксу")
-        self._add_tip(mx, "Максимальное число вариантов в перечислении")
-        self._add_tip(wl, "Слева от совпадения")
-        self._add_tip(wr, "Справа от совпадения")
+        self._add_tip(ci, "Regex will be case-insensitive")
+        self._add_tip(dm, "How to handle numbers")
+        self._add_tip(ml, "Minimum number length")
+        self._add_tip(mt, "Merge different words")
+        self._add_tip(pa, "Prefer alternatives via |")
+        self._add_tip(bp, "Merge by common prefix")
+        self._add_tip(mx, "Maximum number of options")
+        self._add_tip(wl, "Left of match")
+        self._add_tip(wr, "Right of match")
 
         # Скрыть блок с параметрами по умолчанию
         self._toggle_advanced()
 
         # Регулярное выражение
-        regex_frame = ttk.LabelFrame(right_frame, text="Сгенерированное регулярное выражение")
+        regex_frame = ttk.LabelFrame(right_frame, text="Generated regular expression")
         regex_frame.pack(fill="x", padx=5, pady=5)
         self.regex_entry = tk.Text(regex_frame, height=2)
         self.regex_entry.pack(fill="x")
 
-        self.SNIPPET_DEFAULT = "Вставить шаблон..."
+        self.SNIPPET_DEFAULT = "Insert snippet..."
         self.snippet_var = tk.StringVar(value=self.SNIPPET_DEFAULT)
         self.snippet_map = {label: regex for label, regex in SNIPPETS}
         snippet_combo = ttk.Combobox(
@@ -209,16 +209,16 @@ class PatternWizardDialog(tk.Toplevel):
         snippet_combo.pack(anchor="w", pady=2)
         snippet_combo.bind("<<ComboboxSelected>>", self._on_snippet_selected)
 
-        undo_btn = ttk.Button(regex_frame, text="← Предыдущая", command=self._undo_regex)
+        undo_btn = ttk.Button(regex_frame, text="← Previous", command=self._undo_regex)
         undo_btn.pack(side="right", padx=5)
 
         btn_frame = ttk.Frame(right_frame)
         btn_frame.pack(fill="x")
-        ttk.Button(btn_frame, text="Обновить", command=self._generate_regex).pack(side="left", padx=2)
-        ttk.Button(btn_frame, text="Применить", command=self._apply_regex).pack(side="left", padx=2)
+        ttk.Button(btn_frame, text="Update", command=self._generate_regex).pack(side="left", padx=2)
+        ttk.Button(btn_frame, text="Apply", command=self._apply_regex).pack(side="left", padx=2)
 
         # Примеры
-        example_frame = ttk.LabelFrame(right_frame, text="Примеры")
+        example_frame = ttk.LabelFrame(right_frame, text="Examples")
         example_frame.pack(fill="both", expand=True, padx=5, pady=5)
         self.example_list = tk.Listbox(example_frame, height=4)
         self.example_list.pack(side="left", fill="both", expand=True)
@@ -228,20 +228,20 @@ class PatternWizardDialog(tk.Toplevel):
 
         btns = ttk.Frame(example_frame)
         btns.pack(side="left", fill="y", padx=5)
-        ttk.Button(btns, text="Удалить", command=self._remove_example).pack(pady=2)
-        ttk.Button(btns, text="Добавить выделение", command=self._add_selection).pack(pady=2)
+        ttk.Button(btns, text="Delete", command=self._remove_example).pack(pady=2)
+        ttk.Button(btns, text="Add selection", command=self._add_selection).pack(pady=2)
 
         # Список совпадений
-        self.match_frame = ttk.LabelFrame(self, text="Совпадения")
+        self.match_frame = ttk.LabelFrame(self, text="Matches")
         self.match_frame.pack(fill="both", expand=True, padx=5, pady=5)
         self.match_text = tk.Text(self.match_frame, height=10)
         self.match_text.pack(fill="both", expand=True)
 
         mode_frame = ttk.Frame(self)
         mode_frame.pack(fill="x", pady=5)
-        ttk.Radiobutton(mode_frame, text="Совпадения", variable=self.show_mode, value="matches", command=self._on_mode_change).pack(side="left", padx=5)
-        ttk.Radiobutton(mode_frame, text="Отсутствие", variable=self.show_mode, value="absent", command=self._on_mode_change).pack(side="left", padx=5)
-        ttk.Radiobutton(mode_frame, text="Конфликты", variable=self.show_mode, value="conflicts", command=self._on_mode_change).pack(side="left", padx=5)
+        ttk.Radiobutton(mode_frame, text="Matches", variable=self.show_mode, value="matches", command=self._on_mode_change).pack(side="left", padx=5)
+        ttk.Radiobutton(mode_frame, text="Absent", variable=self.show_mode, value="absent", command=self._on_mode_change).pack(side="left", padx=5)
+        ttk.Radiobutton(mode_frame, text="Conflicts", variable=self.show_mode, value="conflicts", command=self._on_mode_change).pack(side="left", padx=5)
 
         nav = ttk.Frame(self)
         nav.pack(fill="x")
@@ -249,13 +249,13 @@ class PatternWizardDialog(tk.Toplevel):
         ttk.Label(nav, textvariable=self.page_label_var).pack(side="left", padx=5)
         ttk.Button(nav, text="→", command=self.next_page).pack(side="left")
 
-        # CEF-поля
-        field_frame = ttk.LabelFrame(left_frame, text="CEF-поля")
+        # CEF fields
+        field_frame = ttk.LabelFrame(left_frame, text="CEF Fields")
         field_frame.pack(fill="both", expand=True, pady=5)
 
         search_frame = ttk.Frame(field_frame)
         search_frame.pack(fill="x")
-        ttk.Label(search_frame, text="Поиск:").pack(side="left")
+        ttk.Label(search_frame, text="Search:").pack(side="left")
         self.cef_search_var = tk.StringVar()
         search_entry = ttk.Entry(search_frame, textvariable=self.cef_search_var)
         search_entry.pack(side="left", fill="x", expand=True, padx=5)
@@ -279,7 +279,7 @@ class PatternWizardDialog(tk.Toplevel):
         self._auto_select_category()
 
         # Кнопка сохранения
-        ttk.Button(self, text="Сохранить", command=self._save).pack(pady=10)
+        ttk.Button(self, text="Save", command=self._save).pack(pady=10)
 
     def _generate_regex(self):
         try:
@@ -312,7 +312,7 @@ class PatternWizardDialog(tk.Toplevel):
 
         except Exception as e:
             logger.error("[Wizard Error] %s", e)
-            messagebox.showerror("Ошибка генерации", str(e))
+            messagebox.showerror("Generation Error", str(e))
 
     def _apply_regex(self):
         pattern = self.regex_entry.get("1.0", tk.END).strip()
@@ -323,7 +323,7 @@ class PatternWizardDialog(tk.Toplevel):
             flags = re.IGNORECASE if self.case_insensitive.get() else 0
             regex = re.compile(pattern, flags)
         except re.error as e:
-            messagebox.showerror("Ошибка компиляции", str(e))
+            messagebox.showerror("Compilation Error", str(e))
             return
 
         self._push_history(pattern)
@@ -371,7 +371,7 @@ class PatternWizardDialog(tk.Toplevel):
 
         apply_highlighting(self.match_text, matches_by_line, {"preview"}, {"preview": "yellow"})
 
-        self.page_label_var.set(f"Страница {self.current_page + 1} из {total_pages}")
+        self.page_label_var.set(f"Page {self.current_page + 1} of {total_pages}")
 
         self.match_text.config(state="disabled")
 
@@ -383,15 +383,15 @@ class PatternWizardDialog(tk.Toplevel):
 
         if not name or not category or not regex:
             messagebox.showwarning(
-                "Незаполненные поля",
-                "Имя, категория и регулярное выражение обязательны."
+                "Missing Fields",
+                "Name, category and regular expression are required."
             )
             return
 
         if not fields:
             messagebox.showwarning(
-                "Незаполненные поля",
-                "Необходимо выбрать хотя бы одно CEF-поле."
+                "Missing Fields",
+                "Please select at least one CEF field."
             )
             return
 
@@ -407,7 +407,7 @@ class PatternWizardDialog(tk.Toplevel):
         save_user_pattern(pattern_data)
         save_per_log_pattern(self.source_file, name, pattern_data, log_name=self.log_name)
 
-        messagebox.showinfo("Готово", f"Паттерн '{name}' сохранён.")
+        messagebox.showinfo("Done", f"Pattern '{name}' saved.")
         self.destroy()
 
     def _add_tip(self, widget, text):
@@ -464,7 +464,7 @@ class PatternWizardDialog(tk.Toplevel):
         start_line = int(start.split(".")[0])
         end_line = int(end.split(".")[0])
         if start_line != end_line:
-            messagebox.showwarning("Выделение", "Выберите часть одной строки")
+            messagebox.showwarning("Selection", "Select part of a single line")
             return
 
         fragment = self.match_text.get(start, end)
