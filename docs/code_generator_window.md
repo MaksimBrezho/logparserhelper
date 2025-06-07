@@ -1,3 +1,5 @@
+<p align="right"><a href="code_generator_window.ru.md">🇷🇺 Русская версия</a></p>
+
 # 🛠️ Code Generator Window
 
 This dialog configures how log lines are converted to CEF and generates the Python converter. It opens from the main window via the **Commands** menu entry **Code Generator**.

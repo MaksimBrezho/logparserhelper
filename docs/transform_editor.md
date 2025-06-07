@@ -1,3 +1,5 @@
+<p align="right"><a href="transform_editor.ru.md">🇷🇺 Русская версия</a></p>
+
 # ✨ Transform Editor Window
 
 The Transform Editor is a dialog used when defining mapping rules for the CEF code generator. It lets you configure how extracted values should be formatted, replaced or reordered before being assigned to a specific CEF field.
