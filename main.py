@@ -1,10 +1,11 @@
 import tkinter as tk
 from gui.app_window import AppWindow
 from utils.window_utils import set_window_icon
+from utils.i18n import translate as _
 
 def main():
     root = tk.Tk()
-    root.title("LogParserHelper")
+    root.title(_("LogParserHelper"))
     root.geometry("1000x700")
 
     set_window_icon(root)

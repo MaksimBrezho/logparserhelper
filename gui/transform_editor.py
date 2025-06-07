@@ -1,5 +1,6 @@
 import tkinter as tk
 from tkinter import ttk
+from utils.i18n import translate as _
 
 from utils.transform_logic import apply_transform
 from utils.window_utils import set_window_icon
@@ -29,13 +30,13 @@ class TransformEditorDialog(tk.Toplevel):
         super().__init__(parent)
         set_window_icon(self)
         self.result = None
-        self.title(f"Transform Editor for CEF Field: {cef_field}")
+        self.title(_(f"Transform Editor for CEF Field: {cef_field}"))
         self.minsize(300, 360)
         menu_bar = tk.Menu(self)
         file_menu = tk.Menu(menu_bar, tearoff=0)
-        file_menu.add_command(label="Save", command=self._on_save, accelerator="Ctrl+S")
-        file_menu.add_command(label="Cancel", command=self.destroy, accelerator="Esc")
-        menu_bar.add_cascade(label="File", menu=file_menu)
+        file_menu.add_command(label=_("Save"), command=self._on_save, accelerator="Ctrl+S")
+        file_menu.add_command(label=_("Cancel"), command=self.destroy, accelerator="Esc")
+        menu_bar.add_cascade(label=_("File"), menu=file_menu)
         self.config(menu=menu_bar)
         self.bind_all("<Control-s>", lambda e: self._on_save())
         self.bind_all("<Escape>", lambda e: self.destroy())
@@ -79,15 +80,15 @@ class TransformEditorDialog(tk.Toplevel):
             replace_pat = ""
             replace_with = ""
 
-        ttk.Label(self, text="Formatting:").pack(anchor="w", padx=10, pady=(10, 5))
+        ttk.Label(self, text=_("Formatting:")).pack(anchor="w", padx=10, pady=(10, 5))
         self.var = tk.StringVar(value=fmt)
         for value, label in self.TRANSFORMS:
-            ttk.Radiobutton(self, text=label, variable=self.var, value=value).pack(
+            ttk.Radiobutton(self, text=_(label), variable=self.var, value=value).pack(
                 anchor="w", padx=20
             )
         self.var.trace_add("write", lambda *_: self._update_example_box())
 
-        ttk.Label(self, text="Value map (key=value per line):").pack(
+        ttk.Label(self, text=_("Value map (key=value per line):")).pack(
             anchor="w", padx=10, pady=(10, 5)
         )
         self.map_text = tk.Text(self, height=4, width=40)
@@ -95,13 +96,13 @@ class TransformEditorDialog(tk.Toplevel):
         if mapping_text:
             self.map_text.insert("1.0", mapping_text)
         self.map_text.bind("<KeyRelease>", lambda e: self._update_example_box())
-        apply_btn = ttk.Button(self, text="Apply", command=self._update_example_box)
+        apply_btn = ttk.Button(self, text=_("Apply"), command=self._update_example_box)
         apply_btn.pack(anchor="e", padx=10, pady=(0, 5))
         self.bind_all("<Control-Return>", lambda e: self._update_example_box())
 
         rep_frame = ttk.Frame(self)
         rep_frame.pack(fill="x", padx=10, pady=5)
-        ttk.Label(rep_frame, text="Replace if pattern matches:").grid(
+        ttk.Label(rep_frame, text=_("Replace if pattern matches:")).grid(
             row=0, column=0, sticky="w"
         )
         self.replace_pattern_var = tk.StringVar(value=replace_pat)
@@ -122,7 +123,7 @@ class TransformEditorDialog(tk.Toplevel):
         if self.regex:
             chk = ttk.Checkbutton(
                 self,
-                text="Show advanced token options",
+                text=_("Show advanced token options"),
                 variable=self.show_token_editor,
                 command=self._toggle_token_editor,
             )

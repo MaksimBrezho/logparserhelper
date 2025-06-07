@@ -1,6 +1,7 @@
 import os
 import tkinter as tk
 from tkinter import ttk, messagebox
+from utils.i18n import translate as _
 
 from utils.transform_logic import apply_transform
 
@@ -26,7 +27,7 @@ class CodeGeneratorDialog(tk.Toplevel):
     def __init__(self, parent, per_log_patterns=None, logs=None, log_key=None):
         super().__init__(parent)
         set_window_icon(self)
-        self.title("CEF Code Generator Dialog")
+        self.title(_("CEF Code Generator Dialog"))
         self.minsize(700, 500)
         self.per_log_patterns = per_log_patterns or []
         self.logs = logs or []
@@ -49,13 +50,13 @@ class CodeGeneratorDialog(tk.Toplevel):
     def _build_ui(self):
         menu_bar = tk.Menu(self)
         file_menu = tk.Menu(menu_bar, tearoff=0)
-        file_menu.add_command(label="Save Config", command=self._save_config, accelerator="Ctrl+S")
-        file_menu.add_command(label="Preview Code ▸", command=self._on_preview, accelerator="Ctrl+P")
-        file_menu.add_command(label="Generate Python", command=self._on_generate, accelerator="Ctrl+G")
-        menu_bar.add_cascade(label="Actions", menu=file_menu)
+        file_menu.add_command(label=_("Save Config"), command=self._save_config, accelerator="Ctrl+S")
+        file_menu.add_command(label=_("Preview Code ▸"), command=self._on_preview, accelerator="Ctrl+P")
+        file_menu.add_command(label=_("Generate Python"), command=self._on_generate, accelerator="Ctrl+G")
+        menu_bar.add_cascade(label=_("Actions"), menu=file_menu)
         self.config(menu=menu_bar)
 
-        header = ttk.LabelFrame(self, text="CEF Header")
+        header = ttk.LabelFrame(self, text=_("CEF Header"))
         header.pack(fill="x", padx=10, pady=5)
 
         self.header_vars = {}
@@ -77,7 +78,7 @@ class CodeGeneratorDialog(tk.Toplevel):
         entry.grid(row=0, column=1, sticky="ew", pady=2, padx=2)
         header.grid_columnconfigure(1, weight=1)
 
-        self.mapping_frame = ttk.LabelFrame(self, text="Fields Auto-Mapped from Regex Patterns")
+        self.mapping_frame = ttk.LabelFrame(self, text=_("Fields Auto-Mapped from Regex Patterns"))
         self.mapping_frame.pack(fill="both", expand=True, padx=10, pady=5)
         canvas = tk.Canvas(self.mapping_frame)
         scroll = ttk.Scrollbar(self.mapping_frame, orient="vertical", command=canvas.yview)
@@ -90,7 +91,7 @@ class CodeGeneratorDialog(tk.Toplevel):
 
         btns = ttk.Frame(self)
         btns.pack(fill="x", pady=5)
-        ttk.Button(btns, text="+ Add Field", command=self._on_add_field).pack(side="left", padx=5)
+        ttk.Button(btns, text=_("+ Add Field"), command=self._on_add_field).pack(side="left", padx=5)
 
         self._refresh_mapping_list()
 
@@ -251,11 +252,11 @@ class CodeGeneratorDialog(tk.Toplevel):
     def _choose_cef_field(self):
         keys = json_utils.load_cef_field_keys()
         if not keys:
-            messagebox.showerror("Error", "No CEF fields available")
+            messagebox.showerror(_("Error"), _("No CEF fields available"))
             return None
         dlg = tk.Toplevel(self)
         set_window_icon(dlg)
-        dlg.title("Choose CEF Field")
+        dlg.title(_("Choose CEF Field"))
         var = tk.StringVar(value=keys[0])
         combo = ttk.Combobox(dlg, values=keys, textvariable=var, state="readonly")
         combo.pack(padx=10, pady=10)
@@ -355,12 +356,12 @@ class CodeGeneratorDialog(tk.Toplevel):
             with open(converter_path, "r", encoding="utf-8") as f:
                 data = f.read()
         except OSError as e:
-            messagebox.showerror("Error", str(e))
+            messagebox.showerror(_("Error"), str(e))
             return
 
         preview = tk.Toplevel(self)
         set_window_icon(preview)
-        preview.title("Generated cef_converter.py")
+        preview.title(_("Generated cef_converter.py"))
         text = tk.Text(preview, wrap="none")
         text.insert("1.0", data)
         text.pack(fill="both", expand=True)
@@ -374,9 +375,9 @@ class CodeGeneratorDialog(tk.Toplevel):
         out_dir = os.path.join(os.getcwd(), "generated_cef")
         try:
             code_generator.generate_files(header, mappings, patterns, out_dir)
-            messagebox.showinfo("Success", f"Files written to {out_dir}")
+            messagebox.showinfo(_("Success"), _(f"Files written to {out_dir}"))
         except Exception as e:
-            messagebox.showerror("Error", str(e))
+            messagebox.showerror(_("Error"), str(e))
 
     # ------------------------------------------------------------------
     def _add_scrolled_label(self, parent, text: str, row: int, column: int):
