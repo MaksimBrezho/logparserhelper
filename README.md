@@ -93,6 +93,11 @@ data/   – built‑in patterns, CEF field definitions and sample logs
 Mappings created automatically for CEF fields of the `Time` category
 use this transformation by default.
 
+## Documentation
+
+Detailed explanations of each window and tool are available in the
+[docs](docs/) directory.
+
 ## UML Diagrams
 
 Automatically generated class and package diagrams are in [docs/uml](docs/uml).
