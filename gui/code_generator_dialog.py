@@ -20,6 +20,8 @@ class CodeGeneratorDialog(tk.Toplevel):
         "severity",
     ]
 
+    CONSTANT_FIELDS = {"deviceVendor", "deviceProduct", "deviceVersion"}
+
     def __init__(self, parent, per_log_patterns=None, logs=None, log_key=None):
         super().__init__(parent)
         self.title("CEF Code Generator Dialog")
@@ -64,8 +66,14 @@ class CodeGeneratorDialog(tk.Toplevel):
 
         self.mapping_frame = ttk.LabelFrame(self, text="Fields Auto-Mapped from Regex Patterns")
         self.mapping_frame.pack(fill="both", expand=True, padx=10, pady=5)
-        self.mapping_list = ttk.Frame(self.mapping_frame)
-        self.mapping_list.pack(fill="both", expand=True)
+        canvas = tk.Canvas(self.mapping_frame)
+        scroll = ttk.Scrollbar(self.mapping_frame, orient="vertical", command=canvas.yview)
+        canvas.configure(yscrollcommand=scroll.set)
+        canvas.pack(side="left", fill="both", expand=True)
+        scroll.pack(side="right", fill="y")
+        self.mapping_list = ttk.Frame(canvas)
+        self.mapping_list.bind("<Configure>", lambda e: canvas.configure(scrollregion=canvas.bbox("all")))
+        canvas.create_window((0, 0), window=self.mapping_list, anchor="nw")
 
         btns = ttk.Frame(self)
         btns.pack(fill="x", pady=5)
@@ -98,6 +106,9 @@ class CodeGeneratorDialog(tk.Toplevel):
         mappings: list[dict] = []
         for field in self.MANDATORY_FIELDS:
             names = by_field.get(field, [])
+            if field in self.CONSTANT_FIELDS and not names:
+                mappings.append({"cef": field, "pattern": "", "value": "", "transform": "none"})
+                continue
             if not names:
                 if field == "signatureID":
                     mappings.append({"cef": field, "rule": "incremental", "transform": "none"})
@@ -109,7 +120,7 @@ class CodeGeneratorDialog(tk.Toplevel):
                     mappings.append({"cef": field, "pattern": n, "value": "", "transform": transform})
 
         for field, names in by_field.items():
-            if field in self.MANDATORY_FIELDS:
+            if field in self.MANDATORY_FIELDS or field in self.CONSTANT_FIELDS:
                 continue
             for n in names:
                 transform = "time" if field in time_fields else "none"
@@ -272,7 +283,9 @@ class CodeGeneratorDialog(tk.Toplevel):
     def _gather_mappings(self):
         result = []
         for m in self.mappings:
-            if m.get("pattern"):
+            if m["cef"] in self.CONSTANT_FIELDS and not m.get("pattern"):
+                result.append({"cef": m["cef"], "value": m.get("value", ""), "transform": m.get("transform", "none")})
+            elif m.get("pattern"):
                 result.append({"cef": m["cef"], "pattern": m["pattern"], "group": 0, "transform": m["transform"]})
             elif m.get("value"):
                 result.append({"cef": m["cef"], "value": m["value"], "transform": m["transform"]})
@@ -317,6 +330,17 @@ class CodeGeneratorDialog(tk.Toplevel):
             messagebox.showerror("Error", str(e))
 
     # ------------------------------------------------------------------
+    def _add_scrolled_label(self, parent, text: str, row: int, column: int):
+        frame = ttk.Frame(parent)
+        var = tk.StringVar(value=text)
+        entry = ttk.Entry(frame, textvariable=var, state="readonly", width=20)
+        scroll = ttk.Scrollbar(frame, orient="horizontal", command=entry.xview)
+        entry.configure(xscrollcommand=scroll.set)
+        entry.pack(fill="x", expand=True)
+        scroll.pack(fill="x")
+        frame.grid(row=row, column=column, sticky="ew", padx=2)
+
+    # ------------------------------------------------------------------
     def _refresh_mapping_list(self):
         for child in self.mapping_list.winfo_children():
             child.destroy()
@@ -347,7 +371,8 @@ class CodeGeneratorDialog(tk.Toplevel):
                 example = "automatic"
                 transformed = "automatic"
             else:
-                regex = pattern_map.get(m.get("pattern"), {}).get("regex", "")
+                pat_name = "" if m["cef"] in self.CONSTANT_FIELDS and not m.get("pattern") else m.get("pattern")
+                regex = pattern_map.get(pat_name, {}).get("regex", "")
                 example = self._find_example(regex) if regex else m.get("value", "")
                 transformed = self._get_transformed_example(
                     regex, m.get("transform", "none"), m.get("value", "")
@@ -358,7 +383,12 @@ class CodeGeneratorDialog(tk.Toplevel):
                 used[label] = used.get(label, 0) + 1
                 label = f"{label} {used[label]}"
             ttk.Label(self.mapping_list, text=label).grid(row=idx, column=0, sticky="w", padx=2)
-            if m.get("pattern"):
+            if m["cef"] in self.CONSTANT_FIELDS and not m.get("pattern"):
+                var = tk.StringVar(value=m.get("value", ""))
+                entry = ttk.Entry(self.mapping_list, textvariable=var)
+                entry.grid(row=idx, column=1, sticky="ew", padx=2)
+                entry.bind("<KeyRelease>", lambda e, i=idx-1, v=var: self._on_value_changed(i, v))
+            elif m.get("pattern"):
                 var = tk.StringVar(value=m["pattern"])
                 combo = ttk.Combobox(self.mapping_list, values=all_names, textvariable=var, state="readonly")
                 combo.grid(row=idx, column=1, sticky="ew", padx=2)
@@ -371,14 +401,16 @@ class CodeGeneratorDialog(tk.Toplevel):
                     entry = ttk.Entry(self.mapping_list, textvariable=var)
                     entry.grid(row=idx, column=1, sticky="ew", padx=2)
                     entry.bind("<KeyRelease>", lambda e, i=idx-1, v=var: self._on_value_changed(i, v))
-            ttk.Label(self.mapping_list, text=regex).grid(row=idx, column=2, sticky="w", padx=2)
+            self._add_scrolled_label(self.mapping_list, regex, idx, 2)
             btn_text = m["transform"] if isinstance(m.get("transform"), str) else "custom"
             state = "normal"
-            if not m.get("pattern") and m.get("rule") != "incremental" and m["cef"] in {"deviceVendor", "deviceProduct", "deviceVersion", "signatureID"}:
+            if (
+                m["cef"] in self.CONSTANT_FIELDS or m["cef"] == "signatureID"
+            ) and not m.get("pattern") and m.get("rule") != "incremental":
                 state = "disabled"
             ttk.Button(self.mapping_list, text=btn_text, state=state, command=lambda i=idx-1: self._on_edit_transform(i)).grid(row=idx, column=3, sticky="w", padx=2)
-            ttk.Label(self.mapping_list, text=example).grid(row=idx, column=4, sticky="w", padx=2)
-            ttk.Label(self.mapping_list, text=transformed).grid(row=idx, column=5, sticky="w", padx=2)
+            self._add_scrolled_label(self.mapping_list, example, idx, 4)
+            self._add_scrolled_label(self.mapping_list, transformed, idx, 5)
             if m["cef"] not in self.MANDATORY_FIELDS:
                 ttk.Button(self.mapping_list, text="✖", width=2, command=lambda i=idx-1: self._on_remove_field(i)).grid(row=idx, column=6, sticky="e", padx=2)
 

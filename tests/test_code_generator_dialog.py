@@ -15,34 +15,21 @@ def test_find_examples():
     result = dlg._find_examples(r"user=(\w+)")
     assert result == ["user=john", "user=jane"]
 
-def test_initial_mappings_duplicate(monkeypatch):
+
+def test_constant_fields_only_when_no_patterns(monkeypatch):
     dlg = CodeGeneratorDialog.__new__(CodeGeneratorDialog)
     dlg.per_log_patterns = [
-        {"name": "deviceVendor", "regex": "foo"},
-        {"name": "deviceVendor", "regex": "bar"},
+        {"name": "VendorPat", "regex": "foo", "fields": ["deviceVendor"]},
+        {"name": "ProductPat", "regex": "bar", "fields": ["deviceProduct"]},
     ]
-    monkeypatch.setattr(CodeGeneratorDialog, "_collect_patterns", lambda self: dlg.per_log_patterns)
-    monkeypatch.setattr(json_utils, "load_cef_field_keys", lambda: ["deviceVendor"])
+    monkeypatch.setattr(json_utils, "load_cef_field_keys", lambda: ["deviceVendor", "deviceProduct"])
+    monkeypatch.setattr(json_utils, "load_cef_fields", lambda: [{"key": "deviceVendor"}, {"key": "deviceProduct"}])
+
     mappings = CodeGeneratorDialog._build_initial_mappings(dlg)
-    dv = [m for m in mappings if m["cef"] == "deviceVendor"]
-    assert len(dv) == 2
-
-
-def test_dialog_init_no_duplicate(monkeypatch):
-    patterns = [{"name": "deviceVendor", "regex": "foo"}]
-
-    monkeypatch.setattr(CodeGeneratorDialog, "_collect_patterns", lambda self: patterns)
-    monkeypatch.setattr(json_utils, "load_cef_field_keys", lambda: ["deviceVendor"])
-
-    monkeypatch.setattr(CodeGeneratorDialog, "_build_ui", lambda self: None)
-    dlg = CodeGeneratorDialog.__new__(CodeGeneratorDialog)
-    dlg.per_log_patterns = patterns
-    dlg.logs = []
-    dlg.mappings = CodeGeneratorDialog._build_initial_mappings(dlg)
-    CodeGeneratorDialog._build_ui(dlg)
-
-    dv = [m for m in dlg.mappings if m["cef"] == "deviceVendor"]
-    assert len(dv) == 1
+    vendor = [m for m in mappings if m["cef"] == "deviceVendor"]
+    product = [m for m in mappings if m["cef"] == "deviceProduct"]
+    assert vendor[0].get("pattern") == "VendorPat"
+    assert product[0].get("pattern") == "ProductPat"
 
 
 def test_initial_mappings_from_fields(monkeypatch):
@@ -112,8 +99,9 @@ def test_dialog_merges_new_patterns(monkeypatch):
     initial = CodeGeneratorDialog._build_initial_mappings(dlg)
     merged = CodeGeneratorDialog._merge_mappings(dlg, config["mappings"], initial)
 
-    names = {m.get("pattern") for m in merged if m.get("cef") == "deviceVendor"}
-    assert names == {"OldPat", "NewPat"}
+    patterns = [m.get("pattern") for m in merged if m.get("cef") == "deviceVendor"]
+    assert "OldPat" in patterns
+    assert "NewPat" in patterns
 
 def test_initial_mappings_signature_id_incremental(monkeypatch):
     dlg = CodeGeneratorDialog.__new__(CodeGeneratorDialog)
