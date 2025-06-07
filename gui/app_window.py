@@ -1,5 +1,6 @@
 import tkinter as tk
 from tkinter import filedialog, ttk, messagebox, simpledialog
+from utils.i18n import translate as _, set_language, add_callback
 from utils.json_utils import (
     load_all_patterns,
     load_cef_fields,
@@ -39,9 +40,11 @@ class AppWindow(tk.Frame):
         self.match_cache = {}  # lineno -> list of matches
         self.tag_map = {}
         self.cef_fields = load_cef_fields()
+        self.language_var = tk.StringVar(value="English")
 
         self._setup_widgets()
         self._load_patterns()
+        add_callback(self.refresh_translations)
 
     def _setup_widgets(self):
         self.grid_rowconfigure(0, weight=1)
@@ -74,13 +77,14 @@ class AppWindow(tk.Frame):
         self.pattern_panel.cef_fields = self.cef_fields
 
         menubar = tk.Menu(self.master)
-        cmd_menu = tk.Menu(menubar, tearoff=0)
-        cmd_menu.add_command(label="Load Log", command=self.load_log_file, accelerator="Ctrl+O")
-        cmd_menu.add_command(label="Save Patterns", command=self.save_current_patterns, accelerator="Ctrl+S")
-        cmd_menu.add_command(label="Code Generator", command=self.open_code_generator, accelerator="Ctrl+G")
-        cmd_menu.add_command(label="Edit User Patterns", command=self.open_user_pattern_editor, accelerator="Ctrl+U")
-        menubar.add_cascade(label="Commands", menu=cmd_menu)
+        self.cmd_menu = tk.Menu(menubar, tearoff=0)
+        self.cmd_menu.add_command(label=_("Load Log"), command=self.load_log_file, accelerator="Ctrl+O")
+        self.cmd_menu.add_command(label=_("Save Patterns"), command=self.save_current_patterns, accelerator="Ctrl+S")
+        self.cmd_menu.add_command(label=_("Code Generator"), command=self.open_code_generator, accelerator="Ctrl+G")
+        self.cmd_menu.add_command(label=_("Edit User Patterns"), command=self.open_user_pattern_editor, accelerator="Ctrl+U")
+        menubar.add_cascade(label=_("Commands"), menu=self.cmd_menu)
         self.master.config(menu=menubar)
+        self.menubar = menubar
         self.master.bind_all("<Control-o>", lambda e: self.load_log_file())
         self.master.bind_all("<Control-s>", lambda e: self.save_current_patterns())
         self.master.bind_all("<Control-g>", lambda e: self.open_code_generator())
@@ -92,21 +96,30 @@ class AppWindow(tk.Frame):
         ctrl = tk.Frame(self)
         ctrl.grid(row=1, column=0, sticky="w", padx=5, pady=5)
 
-        tk.Button(ctrl, text="← Prev", command=self.prev_page).pack(side="left", padx=5)
-        tk.Button(ctrl, text="Next →", command=self.next_page).pack(side="left", padx=5)
+        lang_box = ttk.Combobox(ctrl, values=["English", "Русский"], state="readonly", textvariable=self.language_var, width=10)
+        lang_box.pack(side="right", padx=5)
+        lang_box.bind("<<ComboboxSelected>>", self._on_language_change)
+        self.lang_box = lang_box
 
-        tk.Label(ctrl, text="Lines per page:").pack(side="left", padx=(20, 5))
+        self.prev_btn = tk.Button(ctrl, text=_("← Prev"), command=self.prev_page)
+        self.prev_btn.pack(side="left", padx=5)
+        self.next_btn = tk.Button(ctrl, text=_("Next →"), command=self.next_page)
+        self.next_btn.pack(side="left", padx=5)
+
+        self.lines_label = tk.Label(ctrl, text=_("Lines per page:"))
+        self.lines_label.pack(side="left", padx=(20, 5))
 
         self.spinbox = tk.Spinbox(ctrl, from_=1, to=1000, width=5, command=self.update_page_size)
         self.spinbox.pack(side="left")
         self.spinbox.delete(0, tk.END)
         self.spinbox.insert(0, str(self.page_size))
 
-        self.status_label = tk.Label(ctrl, text="Page 0 of 0")
+        self.status_label = tk.Label(ctrl, text="")
         self.status_label.pack(side="left", padx=15)
-        self.coverage_label = tk.Label(ctrl, text="Coverage: 0%")
+        self.coverage_label = tk.Label(ctrl, text="")
         self.coverage_label.pack(side="left", padx=15)
-        tk.Button(ctrl, text="Create Pattern", command=self.open_pattern_wizard).pack(side="left", padx=5)
+        self.create_btn = tk.Button(ctrl, text=_("Create Pattern"), command=self.open_pattern_wizard)
+        self.create_btn.pack(side="left", padx=5)
         self.text_area.bind("<Motion>", self.on_hover)
         self.text_area.bind("<Leave>", lambda e: self.tooltip.hidetip())
 
@@ -211,7 +224,7 @@ class AppWindow(tk.Frame):
         pattern_index_map = {key: i for i, key in enumerate(pattern_keys)}
 
         coverage = self._compute_coverage(active_names)
-        self.coverage_label.config(text=f"Coverage: {coverage:.1f}%")
+        self.coverage_label.config(text=_("Coverage: {value}%").format(value=f"{coverage:.1f}"))
 
         # Проверка на пересекающиеся паттерны
         def has_overlap(matches: list[dict]) -> bool:
@@ -252,7 +265,7 @@ class AppWindow(tk.Frame):
 
     def _update_status(self):
         total_pages = (len(self.logs) - 1) // self.page_size + 1 if self.logs else 0
-        self.status_label.config(text=f"Page {self.current_page + 1} of {total_pages}")
+        self.status_label.config(text=_("Page {current} of {total}").format(current=self.current_page + 1, total=total_pages))
 
     def next_page(self):
         if (self.current_page + 1) * self.page_size < len(self.logs):
@@ -281,7 +294,7 @@ class AppWindow(tk.Frame):
     def open_pattern_wizard(self):
         selections = self.get_selected_lines()
         if not selections:
-            messagebox.showwarning("No Selection", "Please select lines to generate a pattern.")
+            messagebox.showwarning(_("No Selection"), _("Please select lines to generate a pattern."))
             return
 
         # Получаем CEF-поля и путь к лог-файлу
@@ -291,7 +304,7 @@ class AppWindow(tk.Frame):
         # Default pattern set name
         default_name = get_log_name_for_file(source_file) or os.path.basename(source_file)
         log_name = simpledialog.askstring(
-            "Set Name", "Enter name for per-log patterns:",
+            _("Set Name"), _("Enter name for per-log patterns:"),
             initialvalue=default_name,
             parent=self
         )
@@ -320,7 +333,7 @@ class AppWindow(tk.Frame):
             self.render_page()
         except Exception as e:
             logger.error("[PatternWizard] %s", e)
-            messagebox.showerror("Error", f"Failed to open wizard: {e}")
+            messagebox.showerror(_("Error"), _(f"Failed to open wizard: {e}"))
 
     def open_code_generator(self):
         """Open the code generator dialog (stub)."""
@@ -329,8 +342,8 @@ class AppWindow(tk.Frame):
             if not per_patterns:
                 keys = list(load_log_key_map().keys())
                 if keys:
-                    prompt = "Choose log file key:\n" + ", ".join(keys)
-                    key = simpledialog.askstring("Log Key", prompt, parent=self)
+                    prompt = _("Choose log file key:\n") + ", ".join(keys)
+                    key = simpledialog.askstring(_("Log Key"), prompt, parent=self)
                     if key:
                         per_patterns = load_per_log_patterns_by_key(key)
 
@@ -341,7 +354,7 @@ class AppWindow(tk.Frame):
             dlg.grab_set()
         except Exception as e:
             logger.error("[CodeGenerator] %s", e)
-            messagebox.showerror("Error", f"Failed to open generator: {e}")
+            messagebox.showerror(_("Error"), _(f"Failed to open generator: {e}"))
 
     def open_user_pattern_editor(self):
         """Open dialog for editing user-defined patterns."""
@@ -354,7 +367,7 @@ class AppWindow(tk.Frame):
             self.render_page()
         except Exception as e:
             logger.error("[UserPatternEditor] %s", e)
-            messagebox.showerror("Error", f"Failed to open editor: {e}")
+            messagebox.showerror(_("Error"), _(f"Failed to open editor: {e}"))
 
     def get_selected_lines(self):
         """Return selected fragments along with their full line context."""
@@ -383,7 +396,7 @@ class AppWindow(tk.Frame):
 
     def save_current_patterns(self):
         if not getattr(self, "source_path", None):
-            messagebox.showinfo("No File", "Load a log file first")
+            messagebox.showinfo(_("No File"), _("Load a log file first"))
             return
 
         default_name = get_log_name_for_file(self.source_path) or os.path.basename(self.source_path)
@@ -426,4 +439,22 @@ class AppWindow(tk.Frame):
         self._cache_matches()
         self.render_page()
 
-        messagebox.showinfo("Done", "Patterns saved.")
+        messagebox.showinfo(_("Done"), _("Patterns saved."))
+
+    def _on_language_change(self, event=None):
+        lang = 'ru' if self.language_var.get().startswith('Рус') else 'en'
+        set_language(lang)
+
+    def refresh_translations(self):
+        self.cmd_menu.entryconfigure(0, label=_("Load Log"))
+        self.cmd_menu.entryconfigure(1, label=_("Save Patterns"))
+        self.cmd_menu.entryconfigure(2, label=_("Code Generator"))
+        self.cmd_menu.entryconfigure(3, label=_("Edit User Patterns"))
+        self.menubar.entryconfigure(0, label=_("Commands"))
+        self.prev_btn.config(text=_("← Prev"))
+        self.next_btn.config(text=_("Next →"))
+        self.lines_label.config(text=_("Lines per page:"))
+        self.create_btn.config(text=_("Create Pattern"))
+        options = ["English", "Русский"]
+        self.lang_box.config(values=options)
+        self.render_page()

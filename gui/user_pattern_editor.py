@@ -1,5 +1,6 @@
 import tkinter as tk
 from tkinter import ttk, messagebox
+from utils.i18n import translate as _
 
 from utils import json_utils
 from utils.window_utils import set_window_icon
@@ -11,11 +12,11 @@ class UserPatternEditorDialog(tk.Toplevel):
     def __init__(self, parent):
         super().__init__(parent)
         set_window_icon(self)
-        self.title("User Patterns")
+        self.title(_("User Patterns"))
         menu_bar = tk.Menu(self)
         file_menu = tk.Menu(menu_bar, tearoff=0)
-        file_menu.add_command(label="Save", command=self._save_all, accelerator="Ctrl+S")
-        menu_bar.add_cascade(label="File", menu=file_menu)
+        file_menu.add_command(label=_("Save"), command=self._save_all, accelerator="Ctrl+S")
+        menu_bar.add_cascade(label=_("File"), menu=file_menu)
         self.config(menu=menu_bar)
         self.bind_all("<Control-s>", lambda e: self._save_all())
         self.patterns = [p for p in json_utils.load_all_patterns() if p.get("source") != "builtin"]
@@ -85,9 +86,9 @@ class UserPatternEditorDialog(tk.Toplevel):
 
         btns = ttk.Frame(self)
         btns.pack(fill="x", pady=5)
-        ttk.Button(btns, text="Update", command=self._update_current).pack(side="left", padx=5)
-        ttk.Button(btns, text="Delete", command=self._delete_current).pack(side="left", padx=5)
-        ttk.Button(btns, text="Add", command=self._add_new).pack(side="left", padx=5)
+        ttk.Button(btns, text=_("Update"), command=self._update_current).pack(side="left", padx=5)
+        ttk.Button(btns, text=_("Delete"), command=self._delete_current).pack(side="left", padx=5)
+        ttk.Button(btns, text=_("Add"), command=self._add_new).pack(side="left", padx=5)
 
     # ------------------------------------------------------------------
     def _on_select(self, event=None):
@@ -168,5 +169,5 @@ class UserPatternEditorDialog(tk.Toplevel):
     # ------------------------------------------------------------------
     def _save_all(self):
         json_utils.save_user_patterns(self.patterns)
-        messagebox.showinfo("Saved", "User patterns saved.")
+        messagebox.showinfo(_("Saved"), _("User patterns saved."))
         self.destroy()
