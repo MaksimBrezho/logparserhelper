@@ -96,3 +96,16 @@ def test_regex_preserves_parentheses():
     assert re.fullmatch(regex, logs[0])
     assert re.fullmatch(regex, logs[1])
     assert '(' in regex and ')' in regex
+
+
+def test_leading_separator_position_and_parenthesis():
+    logs = [
+        ": session opened for user cyrus by (uid=0)",
+        ": session opened for user cyrus by (uid=1)"
+    ]
+    regex = build_draft_regex_from_examples(logs)
+    assert re.fullmatch(regex, logs[0])
+    assert re.fullmatch(regex, logs[1])
+    assert regex.startswith(re.escape(": "))
+    assert 'session:' not in regex
+    assert '(' in regex and ')' in regex

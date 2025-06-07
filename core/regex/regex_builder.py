@@ -116,9 +116,20 @@ def build_draft_regex_from_examples(
     sep_columns = []
     tokens_by_line: List[List[str]] = []
 
+    leading_prefix = ""
+    parsed_pairs = []
     for line in lines:
         pairs = tokenize(line.strip())
+        parsed_pairs.append(pairs)
+    if parsed_pairs and all(p and p[0][1] == 'sep' for p in parsed_pairs):
+        first_vals = {p[0][0] for p in parsed_pairs}
+        if len(first_vals) == 1:
+            leading_prefix = re.escape(parsed_pairs[0][0][0])
+            for p in parsed_pairs:
+                p.pop(0)
 
+    for pairs in parsed_pairs:
+        
         tokens = [val for val, kind in pairs if kind == 'token']
         seps = [val for val, kind in pairs if kind == 'sep']
 
@@ -233,6 +244,8 @@ def build_draft_regex_from_examples(
         i += 1
 
     core_pattern = ''.join(token_patterns)
+    if leading_prefix:
+        core_pattern = leading_prefix + core_pattern
 
     if window_left:
         core_pattern = f"(?<={re.escape(window_left)}){core_pattern}"
