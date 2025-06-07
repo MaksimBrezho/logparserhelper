@@ -78,7 +78,7 @@ As CEF fields are checked or unchecked the wizard chooses the category automatic
 - `_auto_select_category` – updates the category label based on selected fields.
 - `_on_snippet_selected` – inserts snippet text into the regex entry.
 
-## UML diagrams
+## UML Diagrams
 
 Class and package diagrams generated with PlantUML are located in `docs/uml`. The `classes_LogParserHelper.plantuml` diagram lists all attributes of `PatternWizardDialog` and other GUI classes.
 
