@@ -1,4 +1,4 @@
-![Log Parser Helper icon](icon/ALLtoCEF.png)
+<img src="icon/ALLtoCEF.png" alt="Log Parser Helper icon" width="381" height="381">
 
 # Log Parser Helper
 
