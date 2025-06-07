@@ -156,7 +156,7 @@ def _reorder_tokens(value: str, regex: str, order: List[int]) -> str:
             tokens.append(tail)
     else:
         span = value[m.start():m.end()]
-        tokens = [t for t in re.split(r"([a-zA-Z]+|\d+|\W)", span) if t]
+        tokens = [t for t in re.split(r"([a-zA-Z]+|\\d+|\\W)", span) if t]
     return "".join(tokens[i] for i in order if i < len(tokens))
 
 
