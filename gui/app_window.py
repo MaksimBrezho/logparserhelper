@@ -20,7 +20,8 @@ from gui.pattern_wizard import PatternWizardDialog
 from gui.code_generator_dialog import CodeGeneratorDialog
 from gui.cef_field_dialog import CEFFieldDialog
 from gui.user_pattern_editor import UserPatternEditorDialog
-from utils.text_utils import compute_char_coverage
+from utils.text_utils import compute_char_coverage, compute_field_line_stats
+from gui.coverage_analysis_dialog import CoverageAnalysisDialog
 import logging
 import re
 import os
@@ -82,6 +83,7 @@ class AppWindow(tk.Frame):
         self.cmd_menu.add_command(label=_("Load Log"), command=self.load_log_file, accelerator="Ctrl+O")
         self.cmd_menu.add_command(label=_("Save Patterns"), command=self.save_current_patterns, accelerator="Ctrl+S")
         self.cmd_menu.add_command(label=_("Code Generator"), command=self.open_code_generator, accelerator="Ctrl+G")
+        self.cmd_menu.add_command(label=_("Coverage Analysis"), command=self.open_coverage_analysis, accelerator="Ctrl+L")
         self.cmd_menu.add_command(label=_("Edit User Patterns"), command=self.open_user_pattern_editor, accelerator="Ctrl+U")
         menubar.add_cascade(label=_("Commands"), menu=self.cmd_menu)
         self.lang_menu = tk.Menu(menubar, tearoff=0)
@@ -103,6 +105,7 @@ class AppWindow(tk.Frame):
         self.master.bind_all("<Control-o>", lambda e: self.load_log_file())
         self.master.bind_all("<Control-s>", lambda e: self.save_current_patterns())
         self.master.bind_all("<Control-g>", lambda e: self.open_code_generator())
+        self.master.bind_all("<Control-l>", lambda e: self.open_coverage_analysis())
         self.master.bind_all("<Control-u>", lambda e: self.open_user_pattern_editor())
         self.master.bind_all("<Alt-Left>", lambda e: self.prev_page())
         self.master.bind_all("<Alt-Right>", lambda e: self.next_page())
@@ -379,6 +382,22 @@ class AppWindow(tk.Frame):
             logger.error("[UserPatternEditor] %s", e)
             messagebox.showerror(_("Error"), _(f"Failed to open editor: {e}"))
 
+    def open_coverage_analysis(self):
+        """Open coverage analysis dialog."""
+        try:
+            patterns = self.patterns + list(getattr(self, "per_log_patterns", []))
+            pattern_fields = {p.get("name"): p.get("fields", []) for p in patterns}
+            active_names = {p.get("name") for p in patterns if p.get("enabled", True)}
+            coverage = self._compute_coverage(active_names)
+            field_stats = compute_field_line_stats(
+                self.logs, self.match_cache, active_names, pattern_fields
+            )
+            dlg = CoverageAnalysisDialog(self, coverage, field_stats)
+            dlg.grab_set()
+        except Exception as e:
+            logger.error("[CoverageAnalysis] %s", e)
+            messagebox.showerror(_("Error"), _(f"Failed to open analysis: {e}"))
+
     def get_selected_lines(self):
         """Return selected fragments along with their full line context."""
         try:
@@ -465,7 +484,8 @@ class AppWindow(tk.Frame):
         self.cmd_menu.entryconfigure(0, label=_("Load Log"))
         self.cmd_menu.entryconfigure(1, label=_("Save Patterns"))
         self.cmd_menu.entryconfigure(2, label=_("Code Generator"))
-        self.cmd_menu.entryconfigure(3, label=_("Edit User Patterns"))
+        self.cmd_menu.entryconfigure(3, label=_("Coverage Analysis"))
+        self.cmd_menu.entryconfigure(4, label=_("Edit User Patterns"))
         self.menubar.entryconfigure(0, label=_("Commands"))
         self.menubar.entryconfigure(1, label=_("Language"))
         self.prev_btn.config(text=_("← Prev"))

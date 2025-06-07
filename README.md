@@ -25,6 +25,7 @@ highlight log files, and generate code that converts logs to the CEF
   user‑defined extensions.
 - 🎨 **Coverage highlighting** shows which parts of the log are matched
   and calculates the percentage of covered characters.
+- 📊 **Coverage analysis** lists lines missing key CEF fields and overall coverage statistics.
 - 🛠️ **Code generator** produces a Python converter for CEF with
   transformations, replacements, token reordering and incremental counters.
 - 🗂️ **Sample logs** in `data/sample_logs` for quick experimentation.

@@ -91,3 +91,62 @@ def compute_char_coverage(
             covered += count_significant_chars(segment)
 
     return covered / total * 100
+
+
+
+def compute_field_line_stats(
+    logs: List[str],
+    matches_by_line: Dict[int, List[Dict]],
+    active_names: set,
+    pattern_fields: Dict[str, List[str]],
+    fields: List[str] | None = None,
+) -> Dict[str, tuple[float, list[int]]]:
+    """Return coverage stats per line for specified fields.
+
+    Parameters
+    ----------
+    logs : list[str]
+        Log lines to analyze.
+    matches_by_line : dict
+        Mapping of line number to pattern match dictionaries.
+    active_names : set
+        Names of patterns that are currently enabled.
+    pattern_fields : dict
+        Mapping of pattern name to list of CEF fields.
+    fields : list[str] | None
+        Target CEF fields to check. Defaults to common fields.
+
+    Returns
+    -------
+    dict
+        Mapping field -> (percent_with_field, missing_line_numbers)
+    """
+    if fields is None:
+        fields = ["name", "severity", "msg", "signatureID"]
+
+    total_lines = len(logs)
+    stats = {f: [0, []] for f in fields}  # count, missing lines
+
+    for i, _ in enumerate(logs, start=1):
+        line_matches = matches_by_line.get(i, [])
+        present = {f: False for f in fields}
+        for m in line_matches:
+            if m.get("name") not in active_names:
+                continue
+            name = m.get("name")
+            fields_for_pat = pattern_fields.get(name, [])
+            for f in fields:
+                if f in fields_for_pat or name == f:
+                    present[f] = True
+        for f in fields:
+            if present[f]:
+                stats[f][0] += 1
+            else:
+                stats[f][1].append(i)
+
+    result = {}
+    for f, (count, missing) in stats.items():
+        percent = 0.0 if total_lines == 0 else count / total_lines * 100
+        result[f] = (percent, missing)
+    return result
+
