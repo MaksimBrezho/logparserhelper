@@ -1,4 +1,4 @@
-![Log Parser Helper icon](icon/ALLtoCEF.ico)
+![Log Parser Helper icon](icon/ALLtoCEF.png)
 
 # Log Parser Helper
 
@@ -58,7 +58,7 @@ python build_installer.py
 ```
 
 The resulting installer binary `ALLtoCEF` will be placed in the `dist`
-directory and will use the icon from `icon/ALLtoCEF.ico`. The helper script
+directory and will use the icon from `icon/ALLtoCEF.png`. The helper script
 also bundles this icon together with the required built-in pattern and CEF
 data files.
 
