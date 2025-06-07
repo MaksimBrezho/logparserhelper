@@ -1,5 +1,6 @@
 import tkinter as tk
 from tkinter import ttk
+from utils.window_utils import set_window_icon
 
 
 class CEFFieldDialog(tk.Toplevel):
@@ -7,6 +8,7 @@ class CEFFieldDialog(tk.Toplevel):
 
     def __init__(self, parent, cef_fields, pattern_name: str, initial=None):
         super().__init__(parent)
+        set_window_icon(self)
         self.title(f"CEF Fields for {pattern_name}")
         self.result = None
         self.var_map = {}

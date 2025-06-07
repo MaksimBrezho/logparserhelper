@@ -10,6 +10,7 @@ from gui.tooltip import ToolTip
 
 from core.regex.regex_builder import build_draft_regex_from_examples
 from utils.json_utils import save_user_pattern, save_per_log_pattern
+from utils.window_utils import set_window_icon
 
 
 SNIPPETS = [
@@ -34,6 +35,7 @@ class PatternWizardDialog(tk.Toplevel):
     def __init__(self, parent, selected_lines, context_lines, cef_fields, source_file, log_name, categories=None, fragment_context=None):
 
         super().__init__(parent)
+        set_window_icon(self)
         self.title("Create New Pattern")
         # Минимальный размер окна, но пользователь может растягивать его
         self.minsize(800, 600)
