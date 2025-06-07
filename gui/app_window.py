@@ -77,7 +77,7 @@ class AppWindow(tk.Frame):
         self.pattern_panel.grid_propagate(False)
         self.pattern_panel.cef_fields = self.cef_fields
 
-        menubar = tk.Menu(self.master)
+        menubar = tk.Menu(self.master, tearoff=0)
         self.cmd_menu = tk.Menu(menubar, tearoff=0)
         self.cmd_menu.add_command(label=_("Load Log"), command=self.load_log_file, accelerator="Ctrl+O")
         self.cmd_menu.add_command(label=_("Save Patterns"), command=self.save_current_patterns, accelerator="Ctrl+S")
