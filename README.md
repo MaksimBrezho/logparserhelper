@@ -45,6 +45,19 @@ Open a log file with the **Load Log** button, select lines and run the
 to store per‑log patterns, or the **Code Generator** to produce a CEF
 converter.
 
+## Building an installer
+
+To produce a standalone executable you need [PyInstaller](https://pyinstaller.org).
+Install it and run the helper script:
+
+```bash
+pip install pyinstaller
+python build_installer.py
+```
+
+The resulting installer binary will be placed in the `dist` directory and will
+use the icon from `icon/ALLtoCEF.ico`.
+
 ## Running the tests
 
 The repository includes an extensive test suite. Execute it with:
