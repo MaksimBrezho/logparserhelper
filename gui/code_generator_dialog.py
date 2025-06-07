@@ -331,7 +331,9 @@ class CodeGeneratorDialog(tk.Toplevel):
     def _on_preview(self):
         import tempfile, pathlib
 
-        header = {k: v.get() for k, v in self.header_vars.items()}
+        # Use only the CEF version for code generation. Remaining header values
+        # are provided via constant mappings.
+        header = {"CEF Version": self.header_vars["CEF Version"].get()}
         mappings = self._gather_mappings()
         patterns = self._collect_patterns()
 
@@ -352,7 +354,9 @@ class CodeGeneratorDialog(tk.Toplevel):
         text.pack(fill="both", expand=True)
 
     def _on_generate(self):
-        header = {k: v.get() for k, v in self.header_vars.items()}
+        # When generating files, only pass the CEF version. Other header values
+        # should be supplied via constant mappings.
+        header = {"CEF Version": self.header_vars["CEF Version"].get()}
         mappings = self._gather_mappings()
         patterns = self._collect_patterns()
         out_dir = os.path.join(os.getcwd(), "generated_cef")
@@ -447,7 +451,9 @@ class CodeGeneratorDialog(tk.Toplevel):
 
     # ------------------------------------------------------------------
     def _save_config(self):
-        header = {k: v.get() for k, v in self.header_vars.items()}
+        # Only persist the CEF version in the header. Other values are derived
+        # from mappings and should not be saved.
+        header = {"CEF Version": self.header_vars["CEF Version"].get()}
         data = {"header": header, "mappings": self.mappings}
         json_utils.save_conversion_config(data, self.log_key)
 
