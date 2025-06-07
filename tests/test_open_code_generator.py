@@ -21,9 +21,10 @@ def test_open_code_generator_selects_key(monkeypatch):
     captured = {}
 
     class DummyDialog:
-        def __init__(self, parent, per_log_patterns=None, logs=None):
+        def __init__(self, parent, per_log_patterns=None, logs=None, log_key=None):
             captured["patterns"] = per_log_patterns
             captured["logs"] = logs
+            captured["log_key"] = log_key
         def grab_set(self):
             pass
 
@@ -33,3 +34,4 @@ def test_open_code_generator_selects_key(monkeypatch):
 
     assert captured["patterns"][0]["name"] == "A"
     assert captured["logs"] == []
+    assert captured["log_key"] is None

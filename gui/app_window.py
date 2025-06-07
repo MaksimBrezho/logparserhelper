@@ -320,7 +320,10 @@ class AppWindow(tk.Frame):
                     if key:
                         per_patterns = load_per_log_patterns_by_key(key)
 
-            dlg = CodeGeneratorDialog(self, per_log_patterns=per_patterns, logs=self.logs)
+            log_key = None
+            if getattr(self, "source_path", None):
+                log_key = get_log_name_for_file(self.source_path)
+            dlg = CodeGeneratorDialog(self, per_log_patterns=per_patterns, logs=self.logs, log_key=log_key)
             dlg.grab_set()
         except Exception as e:
             logger.error("[CodeGenerator] %s", e)
