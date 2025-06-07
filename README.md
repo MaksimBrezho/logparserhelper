@@ -25,3 +25,14 @@ pytest -q
 
 Make sure you have the required dependencies installed before running
 the tests.
+
+## Transformations
+
+When configuring mappings, several value transformations are available:
+
+- `lower`, `upper`, `capitalize`, `sentence`
+- `time` &mdash; automatically detects common date/time formats using
+  `python-dateutil` and converts them to `YYYY-MM-DDTHH:MM:SSZ`.
+
+Mappings created automatically for CEF fields of the `Time` category
+use this transformation by default.

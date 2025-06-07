@@ -3,7 +3,27 @@
 from __future__ import annotations
 
 import re
+from datetime import timezone
+from dateutil import parser as date_parser
 from typing import Any, Dict, List
+
+
+def _normalize_time(value: str) -> str:
+    """Parse an arbitrary date string and return ISO-8601 in UTC."""
+    if not value:
+        return value
+    try:
+        if '/' in value:
+            dt = date_parser.parse(value, dayfirst=True)
+        else:
+            dt = date_parser.parse(value)
+    except (ValueError, TypeError):
+        return value
+    if not dt.tzinfo:
+        dt = dt.replace(tzinfo=timezone.utc)
+    else:
+        dt = dt.astimezone(timezone.utc)
+    return dt.strftime("%Y-%m-%dT%H:%M:%SZ")
 
 
 def _apply_basic_transform(value: str, transform: str) -> str:
@@ -19,6 +39,8 @@ def _apply_basic_transform(value: str, transform: str) -> str:
         return value.title()
     if transform == "sentence":
         return value[:1].upper() + value[1:].lower() if value else value
+    if transform == "time":
+        return _normalize_time(value)
     return value
 
 

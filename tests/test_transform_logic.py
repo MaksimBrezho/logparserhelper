@@ -99,3 +99,16 @@ def test_apply_transform_lookahead_reorder():
         '15 04:06:18 Jun',
         '15 04:06:19 Jun',
     ]
+
+
+def test_apply_transform_time_iso():
+    assert apply_transform('2024-06-02T12:34:56Z', 'time') == '2024-06-02T12:34:56Z'
+
+
+def test_apply_transform_time_space():
+    assert apply_transform('2024-06-02 12:34:56', 'time') == '2024-06-02T12:34:56Z'
+
+
+def test_apply_transform_time_various_formats():
+    assert apply_transform('Jun 02, 2024 12:34:56', 'time') == '2024-06-02T12:34:56Z'
+    assert apply_transform('02/06/2024 12:34:56 +0300', 'time') == '2024-06-02T09:34:56Z'
