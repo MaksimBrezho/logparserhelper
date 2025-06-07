@@ -104,3 +104,11 @@ Detailed explanations of each window and tool are available in the
 ## UML Diagrams
 
 Automatically generated class and package diagrams are in [docs/uml](docs/uml).
+
+## Citation
+
+Log examples used in this project come from the [loghub](https://github.com/logpai/loghub) repository. This project uses the following work:
+
+Jieming Zhu, Shilin He, Pinjia He, Jinyang Liu, Michael R. Lyu. [Loghub: A Large Collection of System Log Datasets for AI-driven Log Analytics](https://arxiv.org/abs/2008.06448). IEEE International Symposium on Software Reliability Engineering (ISSRE), 2023.
+
+This project is open for non-commercial use.
