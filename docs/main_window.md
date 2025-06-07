@@ -1,4 +1,4 @@
-# Log Parser Helper Main Window
+# 🪟 Log Parser Helper Main Window
 
 This document describes the purpose and elements of the application's main window.
 
