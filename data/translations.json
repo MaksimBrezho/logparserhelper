@@ -125,6 +125,7 @@
   "Failed to open wizard: {e}": "Не удалось открыть мастер: {e}",
   "Files written to {out_dir}": "Файлы записаны в {out_dir}",
   "Pattern '{name}' saved.": "Шаблон '{name}' сохранён.",
-  "Transform Editor for CEF Field: {cef_field}": "Редактор преобразований для поля CEF: {cef_field}"
+  "Transform Editor for CEF Field: {cef_field}": "Редактор преобразований для поля CEF: {cef_field}",
+  "OK": "ОК"
 }
 
