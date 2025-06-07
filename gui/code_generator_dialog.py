@@ -37,6 +37,9 @@ class CodeGeneratorDialog(tk.Toplevel):
         initial = self._build_initial_mappings()
         self.mappings = self._merge_mappings(loaded, initial)
         self._build_ui()
+        self.bind_all("<Control-s>", lambda e: self._save_config())
+        self.bind_all("<Control-p>", lambda e: self._on_preview())
+        self.bind_all("<Control-g>", lambda e: self._on_generate())
         header_data = config.get("header", {})
         for key, var in self.header_vars.items():
             var.set(header_data.get(key, var.get()))
@@ -46,9 +49,9 @@ class CodeGeneratorDialog(tk.Toplevel):
     def _build_ui(self):
         menu_bar = tk.Menu(self)
         file_menu = tk.Menu(menu_bar, tearoff=0)
-        file_menu.add_command(label="Save Config", command=self._save_config)
-        file_menu.add_command(label="Preview Code ▸", command=self._on_preview)
-        file_menu.add_command(label="Generate Python", command=self._on_generate)
+        file_menu.add_command(label="Save Config", command=self._save_config, accelerator="Ctrl+S")
+        file_menu.add_command(label="Preview Code ▸", command=self._on_preview, accelerator="Ctrl+P")
+        file_menu.add_command(label="Generate Python", command=self._on_generate, accelerator="Ctrl+G")
         menu_bar.add_cascade(label="Actions", menu=file_menu)
         self.config(menu=menu_bar)
 
@@ -88,9 +91,6 @@ class CodeGeneratorDialog(tk.Toplevel):
         btns = ttk.Frame(self)
         btns.pack(fill="x", pady=5)
         ttk.Button(btns, text="+ Add Field", command=self._on_add_field).pack(side="left", padx=5)
-        ttk.Button(btns, text="Save Config", command=self._save_config).pack(side="right", padx=5)
-        ttk.Button(btns, text="Preview Code ▸", command=self._on_preview).pack(side="right", padx=5)
-        ttk.Button(btns, text="Generate Python", command=self._on_generate).pack(side="right", padx=5)
 
         self._refresh_mapping_list()
 

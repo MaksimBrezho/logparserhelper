@@ -25,13 +25,12 @@ In the main window select text in the log viewer and click **Create Pattern**. T
    - **Max options** – maximum length of enumerations created by the regex builder.
    - **Window left/right** – optional look‑behind and look‑ahead anchors for the fragment window.
 5. **Generated regular expression** – editable text area showing the draft regex. Below it is the snippet combobox used to insert common regex fragments.
-6. **Undo** – the “← Previous” button restores the previous regex from history.
-7. **Update** – regenerates the regex from the current examples and parameters.
-8. **Apply** – compiles the regex and shows matches in the preview area.
-9. **Examples** – list of selected fragments. Buttons allow deleting entries or adding a new selection from the preview.
-10. **Matches preview** – shows lines from the log with matches highlighted. The view can display matching lines, absent lines or lines with multiple matches (conflicts). Pagination controls navigate through the log.
+6. **Undo** – the “← Previous” button restores the previous regex from history (`Ctrl+Z`).
+7. **Update** – regenerates the regex from the current examples and parameters (`Ctrl+R`).
+8. **Apply** – compiles the regex and shows matches in the preview area (`Ctrl+Enter`).
+9. **Examples** – list of selected fragments. Buttons allow deleting entries (`Delete`) or adding a new selection from the preview (`Ctrl+A`).
+10. **Matches preview** – shows lines from the log with matches highlighted. The view can display matching lines, absent lines or lines with multiple matches (conflicts). Use `Alt+Left`/`Alt+Right` to navigate pages.
 11. **CEF Fields** – searchable list of CEF field checkboxes. The selected set determines the category, which updates automatically. Tooltip hints show field descriptions and examples.
-12. **Save** – stores the pattern in the user pattern list and also in the per‑log patterns for the chosen log name.
 
 ## Snippets
 

@@ -17,8 +17,8 @@ The window is created by `TransformEditorDialog` in `gui/transform_editor.py`. I
 4. **Value map** – a multi‑line text box where each line contains `key=value`. Matching input values are replaced by the corresponding output.
 5. **Replace if pattern matches** – two entry fields where you can specify a regular expression and the replacement text. If the regex matches, the value is replaced.
 6. **Advanced token options** – when a regex is available, a checkbox reveals controls for reordering or dropping tokens. Tokens are detected from the best matching example and can be dragged to rearrange or removed with <kbd>Delete</kbd>.
-7. **Preview area** – shows the examples with the selected transformation applied so you can verify the result before saving.
-8. **Save and Cancel buttons** – apply the current settings or close the dialog without saving.
+7. **Preview area** – shows the examples with the selected transformation applied so you can verify the result before saving. Use **Apply** (`Ctrl+Enter`) to refresh.
+8. **File menu** – commands **Save** (`Ctrl+S`) and **Cancel** (`Esc`).
 
 ## Resulting Specification
 

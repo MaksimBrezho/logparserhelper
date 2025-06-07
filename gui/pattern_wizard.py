@@ -107,6 +107,15 @@ class PatternWizardDialog(tk.Toplevel):
         self.page_label_var.set(f"Page {self.current_page + 1} of {total_pages}")
         self._generate_regex()
 
+        # keyboard shortcuts
+        self.bind_all("<Control-z>", lambda e: self._undo_regex())
+        self.bind_all("<Control-r>", lambda e: self._generate_regex())
+        self.bind_all("<Control-Return>", lambda e: self._apply_regex())
+        self.bind_all("<Delete>", lambda e: self._remove_example())
+        self.bind_all("<Control-a>", lambda e: self._add_selection())
+        self.bind_all("<Alt-Left>", lambda e: self.prev_page())
+        self.bind_all("<Alt-Right>", lambda e: self.next_page())
+
     def _build_ui(self):
         # Верхние поля
         top_frame = ttk.Frame(self)
@@ -280,8 +289,7 @@ class PatternWizardDialog(tk.Toplevel):
         self._filter_cef_fields()
         self._auto_select_category()
 
-        # Кнопка сохранения
-        ttk.Button(self, text="Save", command=self._save).pack(pady=10)
+
 
     def _generate_regex(self):
         try:

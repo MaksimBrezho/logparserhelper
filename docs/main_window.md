@@ -35,12 +35,12 @@ Located under the text area and includes:
 
 | Element | Purpose |
 |---------|---------|
-| **Commands ▾** | Drop-down with **Load Log**, **Save Patterns** and **Code Generator** actions. |
-| **← Prev** / **Next →** | Switch pages when viewing logs page by page. |
+| **Commands ▾** | Drop-down with **Load Log** (`Ctrl+O`), **Save Patterns** (`Ctrl+S`), **Code Generator** (`Ctrl+G`) and **Edit User Patterns** (`Ctrl+U`). |
+| **← Prev** / **Next →** | Switch pages when viewing logs page by page (`Alt+Left`/`Alt+Right`). |
 | `Lines per page` | Input/spin box for the number of lines per page. |
 | **Page X of Y** | Shows the current page and total pages. |
 | **Coverage** | Displays the percentage of characters covered by active patterns. |
-| **Create Pattern** | Launches the wizard for creating a new pattern from selected lines. |
+| **Create Pattern** | Launches the wizard for creating a new pattern from selected lines (`Ctrl+N`). |
 
 ## Behavior
 
