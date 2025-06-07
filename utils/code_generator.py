@@ -42,6 +42,20 @@ def generate_files(
     """
     os.makedirs(output_dir, exist_ok=True)
 
+    # Filter provided patterns to only those referenced in mappings
+    used_names = set()
+    for m in mappings:
+        p = m.get("pattern")
+        if isinstance(p, dict):
+            name = p.get("name")
+        else:
+            name = p
+        if name:
+            used_names.add(name)
+
+    if used_names:
+        patterns = [p for p in patterns if p.get("name") in used_names]
+
     suffix = f"_{log_name}" if log_name else ""
     converter_path = os.path.join(output_dir, f"cef_converter{suffix}.py")
     main_path = os.path.join(output_dir, f"main_cef_converter{suffix}.py")
