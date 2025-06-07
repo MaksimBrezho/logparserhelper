@@ -8,7 +8,7 @@ def generalize_token(token: str) -> str:
     if re.fullmatch(r'[a-zA-Z]+', token):
         return r'[a-zA-Z]+'
 
-    if re.fullmatch(r'\w+', token):   # 💡 перенесено выше
+    if re.fullmatch(r'\w+', token):
         return r'\w+'
 
     if re.fullmatch(r'[\w\-]+', token):
