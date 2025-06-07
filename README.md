@@ -1,3 +1,5 @@
+<p align="right"><a href="README.ru.md">🇷🇺 Русская версия</a></p>
+
 <p align="center">
   <img src="icon/ALLtoCEF.png" alt="Log Parser Helper icon" width="200">
 </p>
