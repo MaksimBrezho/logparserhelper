@@ -1,6 +1,6 @@
 <p align="right"><a href="main_window.ru.md">🇷🇺 Русская версия</a></p>
 
-# 🪟 Log Parser Helper Main Window
+# 🖥️ Log Parser Helper Main Window
 
 This document describes the purpose and elements of the application's main window.
 
