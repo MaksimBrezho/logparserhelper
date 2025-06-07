@@ -40,7 +40,7 @@ class CEFFieldDialog(tk.Toplevel):
 
         btns = ttk.Frame(self)
         btns.pack(pady=5)
-        ttk.Button(btns, text="OK", command=self._on_ok).pack(side="left", padx=5)
+        ttk.Button(btns, text=_("OK"), command=self._on_ok).pack(side="left", padx=5)
         ttk.Button(btns, text=_("Cancel"), command=self._on_cancel).pack(side="left", padx=5)
 
     def _on_ok(self):
