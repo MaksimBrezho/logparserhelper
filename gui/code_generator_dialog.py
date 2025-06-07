@@ -152,8 +152,12 @@ class CodeGeneratorDialog(tk.Toplevel):
             if key in seen:
                 continue
 
-            # Remove placeholder mapping for the same field
-            if not _is_placeholder(m):
+            if _is_placeholder(m):
+                if any(e.get("cef") == m.get("cef") for e in existing):
+                    # Skip placeholder if a mapping for this field already exists
+                    continue
+            else:
+                # Remove placeholder mapping for the same field
                 for idx in range(len(merged) - 1, -1, -1):
                     current = merged[idx]
                     if current.get("cef") == m.get("cef") and _is_placeholder(current):
