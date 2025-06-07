@@ -79,3 +79,20 @@ def test_get_transformed_example_constant():
     result = CodeGeneratorDialog._get_transformed_example(dlg, "", "lower", value="ACME")
     assert result == "acme"
 
+
+def test_initial_mappings_time_transform(monkeypatch):
+    dlg = CodeGeneratorDialog.__new__(CodeGeneratorDialog)
+
+    patterns = [
+        {"name": "TimePat", "regex": "foo", "fields": ["rt"]},
+    ]
+
+    dlg.per_log_patterns = patterns
+    monkeypatch.setattr(CodeGeneratorDialog, "_collect_patterns", lambda self: patterns)
+    monkeypatch.setattr(json_utils, "load_cef_field_keys", lambda: ["rt"])
+    monkeypatch.setattr(json_utils, "load_cef_fields", lambda: [{"key": "rt", "category": "Time"}])
+
+    mappings = CodeGeneratorDialog._build_initial_mappings(dlg)
+    tran = [m["transform"] for m in mappings if m["cef"] == "rt"]
+    assert tran == ["time"]
+

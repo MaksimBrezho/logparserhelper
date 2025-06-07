@@ -75,7 +75,9 @@ class CodeGeneratorDialog(tk.Toplevel):
     def _build_initial_mappings(self):
         # Only consider patterns that are present for this log file
         patterns = list(self.per_log_patterns)
-        cef_keys = set(json_utils.load_cef_field_keys())
+        cef_fields = json_utils.load_cef_fields()
+        cef_keys = {f.get("key") for f in cef_fields}
+        time_fields = {f.get("key") for f in cef_fields if f.get("category") == "Time"}
 
         by_field = {}
         for p in patterns:
@@ -96,13 +98,15 @@ class CodeGeneratorDialog(tk.Toplevel):
                 mappings.append({"cef": field, "pattern": "", "value": "", "transform": "none"})
             else:
                 for n in names:
-                    mappings.append({"cef": field, "pattern": n, "value": "", "transform": "none"})
+                    transform = "time" if field in time_fields else "none"
+                    mappings.append({"cef": field, "pattern": n, "value": "", "transform": transform})
 
         for field, names in by_field.items():
             if field in self.MANDATORY_FIELDS:
                 continue
             for n in names:
-                mappings.append({"cef": field, "pattern": n, "value": "", "transform": "none"})
+                transform = "time" if field in time_fields else "none"
+                mappings.append({"cef": field, "pattern": n, "value": "", "transform": transform})
 
         return mappings
 
@@ -211,6 +215,12 @@ class CodeGeneratorDialog(tk.Toplevel):
 
     def _on_edit_transform(self, idx):
         m = self.mappings[idx]
+        cef_info = {f.get("key"): f for f in json_utils.load_cef_fields()}
+        if cef_info.get(m.get("cef"), {}).get("category") == "Time":
+            messagebox.showwarning(
+                "Time Field",
+                "Time values will be automatically converted to ISO-8601"
+            )
         pattern_map = {p["name"]: p for p in self._collect_patterns()}
         regex = pattern_map.get(m.get("pattern"), {}).get("regex", "")
         examples = self._find_examples(regex) if regex else []
