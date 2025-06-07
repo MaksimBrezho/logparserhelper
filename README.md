@@ -8,7 +8,7 @@
 
 <p align="center">
   <img alt="Python" src="https://img.shields.io/badge/python-3.11%2B-blue?logo=python">
-  <img alt="License" src="https://img.shields.io/badge/license-MIT-green">
+  <img alt="License" src="https://img.shields.io/badge/license-Non--commercial-lightgrey">
 </p>
 
 Log Parser Helper is a collection of utilities and a desktop GUI for
@@ -120,4 +120,4 @@ Jieming Zhu, Shilin He, Pinjia He, Jinyang Liu, Michael R. Lyu. [Loghub: A Large
 
 ## License
 
-This project is licensed under the [MIT License](LICENSE).
+This project is licensed under the [Non-commercial License](LICENSE).
