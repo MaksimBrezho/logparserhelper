@@ -154,3 +154,25 @@ def test_generate_files_incremental_rule(tmp_path):
     assert 'signatureID=1' in r2
     assert 'signatureID=2' in r3
 
+
+def test_generate_files_handles_quotes(tmp_path):
+    header = {'CEF Version': '0'}
+    patterns = [
+        {'name': "Int'l Phone Format", 'regex': r'foo'}
+    ]
+    mappings = [
+        {
+            'cef': 'dvc',
+            'pattern': "Int'l Phone Format",
+            'transform': 'none',
+        }
+    ]
+
+    paths = generate_files(header, mappings, patterns, tmp_path, log_name='test')
+    spec = importlib.util.spec_from_file_location('cef_converter', paths[0])
+    module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(module)
+    conv = module.LogToCEFConverter()
+    result = conv.convert_line('foo')
+    assert 'dvc=foo' in result
+

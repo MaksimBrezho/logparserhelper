@@ -5,9 +5,16 @@ from __future__ import annotations
 import os
 from textwrap import dedent
 from typing import List, Dict
+import json
 
 
-def generate_files(header: Dict[str, str], mappings: List[Dict], patterns: List[Dict], output_dir: str) -> list[str]:
+def generate_files(
+    header: Dict[str, str],
+    mappings: List[Dict],
+    patterns: List[Dict],
+    output_dir: str,
+    log_name: str | None = None,
+) -> list[str]:
     """Generate converter and main script files.
 
     Parameters
@@ -30,20 +37,29 @@ def generate_files(header: Dict[str, str], mappings: List[Dict], patterns: List[
         Available patterns with 'name' and 'regex'.
     output_dir : str
         Directory to write generated files.
+    log_name : str, optional
+        Optional log identifier used in generated file names and comments.
     """
     os.makedirs(output_dir, exist_ok=True)
 
-    converter_path = os.path.join(output_dir, "cef_converter.py")
-    main_path = os.path.join(output_dir, "main_cef_converter.py")
+    suffix = f"_{log_name}" if log_name else ""
+    converter_path = os.path.join(output_dir, f"cef_converter{suffix}.py")
+    main_path = os.path.join(output_dir, f"main_cef_converter{suffix}.py")
 
-    header_repr = "{\n" + ",\n".join(f"    '{k}': '{v}'" for k, v in header.items()) + "\n}"
-    pattern_repr = "{\n" + ",\n".join(
-        f"    '{p['name']}': re.compile(r'''{p['regex']}''')" for p in patterns) + "\n}"
+    header_repr = json.dumps(header, ensure_ascii=False, indent=4)
+    pattern_entries = []
+    for p in patterns:
+        key = json.dumps(p['name'], ensure_ascii=False)
+        pattern_entries.append(f"    {key}: re.compile(r'''{p['regex']}''')")
+    pattern_repr = "{\n" + ",\n".join(pattern_entries) + "\n}"
     mapping_repr = "[\n" + ",\n".join(
         "    " + repr(m) for m in mappings
     ) + "\n]"
 
+    comment = f"# Converter for log: {log_name}" if log_name else "# Converter"
+
     converter_code = f"""
+{comment}
 import re
 from utils.transform_logic import apply_transform
 
@@ -105,8 +121,10 @@ class LogToCEFConverter:
         fp.write(f"{{line}} | coverage={{coverage:.1f}}%\\n")
 """
 
-    main_code = dedent("""
-    from cef_converter import LogToCEFConverter
+    comment_main = f"# Runner for log: {log_name}" if log_name else "# Runner"
+    main_code = dedent(f"""
+    {comment_main}
+    from cef_converter{suffix} import LogToCEFConverter
 
     def main():
         conv = LogToCEFConverter()
