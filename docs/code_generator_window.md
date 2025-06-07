@@ -1,6 +1,6 @@
 # Code Generator Window
 
-This dialog configures how log lines are converted to CEF and generates the Python converter. It opens from the main window via the **Code Generator** menu item.
+This dialog configures how log lines are converted to CEF and generates the Python converter. It opens from the main window via the **Commands** menu entry **Code Generator**.
 
 ## CEF Header Section
 
