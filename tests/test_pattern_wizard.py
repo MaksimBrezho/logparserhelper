@@ -134,3 +134,15 @@ def test_auto_select_category_multi():
     PatternWizardDialog._auto_select_category(wiz)
     assert wiz.category_var.get() == "Multiple"
 
+
+def test_on_snippet_selected():
+    wiz = PatternWizardDialog.__new__(PatternWizardDialog)
+    wiz.regex_entry = DummyEntry()
+    wiz.snippet_var = DummyVar("Digits")
+    wiz.snippet_map = {"Digits": "\\d+"}
+    wiz.SNIPPET_DEFAULT = "Insert"
+
+    PatternWizardDialog._on_snippet_selected(wiz)
+    assert wiz.regex_entry.get() == "\\d+"
+    assert wiz.snippet_var.get() == "Insert"
+

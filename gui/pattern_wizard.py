@@ -12,6 +12,24 @@ from core.regex.regex_builder import build_draft_regex_from_examples
 from utils.json_utils import save_user_pattern, save_per_log_pattern
 
 
+SNIPPETS = [
+    ("Одно слово (любые символы, кроме пробелов)", r"\S+"),
+    ("Одно слово только из букв", r"[a-zA-Z]+"),
+    ("Одно слово только из цифр", r"\d+"),
+    ("Слово из букв и цифр", r"[a-zA-Z0-9]+"),
+    ("Слово из любых символов", r"[^ \t\n\r\f\v]+"),
+    ("Строка до конца строки", r".*"),
+    ("Строка до конца строки (нежадно)", r".*?"),
+    ("Одно число фиксированной длины (3)", r"\d{3}"),
+    ("Одно число, минимум N цифр", r"\d{2,}"),
+    ("Символы до двоеточия", r"[^:]+"),
+    ("Фрагмент в квадратных скобках", r"\[[^\]]+\]"),
+    ("Фрагмент в круглых скобках", r"\([^)]+\)"),
+    ("Линия с тегом", r"[a-zA-Z0-9._-]+:")
+]
+
+
+
 class PatternWizardDialog(tk.Toplevel):
     def __init__(self, parent, selected_lines, context_lines, cef_fields, source_file, log_name, categories=None, fragment_context=None):
 
@@ -177,6 +195,19 @@ class PatternWizardDialog(tk.Toplevel):
         regex_frame.pack(fill="x", padx=5, pady=5)
         self.regex_entry = tk.Text(regex_frame, height=2)
         self.regex_entry.pack(fill="x")
+
+        self.SNIPPET_DEFAULT = "Вставить шаблон..."
+        self.snippet_var = tk.StringVar(value=self.SNIPPET_DEFAULT)
+        self.snippet_map = {label: regex for label, regex in SNIPPETS}
+        snippet_combo = ttk.Combobox(
+            regex_frame,
+            textvariable=self.snippet_var,
+            values=list(self.snippet_map.keys()),
+            state="readonly",
+            width=35,
+        )
+        snippet_combo.pack(anchor="w", pady=2)
+        snippet_combo.bind("<<ComboboxSelected>>", self._on_snippet_selected)
 
         undo_btn = ttk.Button(regex_frame, text="← Предыдущая", command=self._undo_regex)
         undo_btn.pack(side="right", padx=5)
@@ -410,6 +441,18 @@ class PatternWizardDialog(tk.Toplevel):
         self.regex_entry.delete("1.0", tk.END)
         self.regex_entry.insert(tk.END, prev)
         self._apply_regex()
+
+    def _on_snippet_selected(self, *_):
+        label = self.snippet_var.get()
+        regex = self.snippet_map.get(label)
+        if not regex:
+            return
+        try:
+            index = self.regex_entry.index(tk.INSERT)
+        except Exception:
+            index = tk.END
+        self.regex_entry.insert(index, regex)
+        self.snippet_var.set(self.SNIPPET_DEFAULT)
 
     def _add_selection(self):
         try:
