@@ -25,6 +25,7 @@ def generate_files(header: Dict[str, str], mappings: List[Dict], patterns: List[
         - 'value_map': mapping of values
         - 'replace_pattern': regex for replacement check
         - 'replace_with': replacement value
+        - 'rule': special rule like 'incremental'
     patterns : list of dict
         Available patterns with 'name' and 'regex'.
     output_dir : str
@@ -51,12 +52,16 @@ class LogToCEFConverter:
         self.compiled_patterns = {pattern_repr}
         self.mappings = {mapping_repr}
         self.cef_header = {header_repr}
+        self._sig_counter = -1
 
     def convert_line(self, line: str) -> str:
         matches = {{name: rgx.search(line) for name, rgx in self.compiled_patterns.items()}}
         fields = {{}}
         for m in self.mappings:
-            if m.get('pattern'):
+            if m.get('rule') == 'incremental':
+                self._sig_counter += 1
+                value = str(self._sig_counter)
+            elif m.get('pattern'):
                 match = matches.get(m['pattern'])
                 if match:
                     if 'groups' in m:
