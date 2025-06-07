@@ -1,38 +1,79 @@
 # Log Parser Helper
 
-This project provides helper utilities and a GUI for building log parsing
-patterns and analyzing logs.
+Log Parser Helper is a collection of utilities and a desktop GUI for
+experimenting with log formats. It lets you build regular expressions,
+highlight log files, and generate code that converts logs to the CEF
+(Common Event Format).
+
+## Features
+
+- **Tkinter GUI** for viewing logs and enabling/disabling regex patterns.
+- **Pattern Wizard** that creates draft regular expressions from selected
+  log lines with advanced controls for numbers, case sensitivity and
+  prefix merging.
+- **Built‑in patterns** for common timestamps and messages plus support
+  for per‑log and user‑defined patterns.
+- **Coverage highlighting** shows which parts of the log are matched by
+  active patterns and calculates the percentage of covered characters.
+- **Code generator** that produces a Python converter for CEF. Mapping
+  rules support value transformations, replacements, token reordering and
+  incremental counters.
+- **Sample log files** in `data/sample_logs` for quick experimentation.
 
 ## Installation
 
-Install dependencies with `pip` using the included requirements file:
+1. Ensure Python 3.11 or newer is available.
+2. Install dependencies:
+
+   ```bash
+   pip install -r requirements.txt
+   ```
+
+If the environment lacks internet access, preinstall the packages from
+`requirements.txt` into a virtual environment and reuse it.
+
+## Running the application
+
+Launch the GUI with:
 
 ```bash
-pip install -r requirements.txt
+python main.py
 ```
 
-Note that `pip` may need Internet access to download packages. If your
-environment does not have Internet access, use a preconfigured virtual
-environment containing the requirements.
+Open a log file with the **Load Log** button, select lines and run the
+**Create Pattern** wizard to build new patterns. Use **Save Patterns**
+to store per‑log patterns, or the **Code Generator** to produce a CEF
+converter.
 
 ## Running the tests
 
-Execute the automated tests with `pytest`:
+The repository includes an extensive test suite. Execute it with:
 
 ```bash
 pytest -q
 ```
 
-Make sure you have the required dependencies installed before running
-the tests.
+All tests should pass after the dependencies are installed.
 
 ## Transformations
 
-When configuring mappings, several value transformations are available:
+When defining mapping rules for the code generator, several helper
+transformations are supported:
 
 - `lower`, `upper`, `capitalize`, `sentence`
-- `time` &mdash; automatically detects common date/time formats using
-  `python-dateutil` and converts them to `YYYY-MM-DDTHH:MM:SSZ`.
+- `time` – detects many common date/time formats via `python-dateutil`
+  and converts them to `YYYY-MM-DDTHH:MM:SSZ`.
 
-Mappings created automatically for CEF fields of the `Time` category
-use this transformation by default.
+Transformations can also specify token reordering, value replacement and
+value maps. See `utils/transform_logic.py` for full details.
+
+## Project structure
+
+```
+core/   – regex builder, tokenizer and highlighting logic
+utils/  – JSON helpers, color utilities and the code generator
+gui/    – Tkinter user interface modules
+data/   – built‑in patterns, CEF field definitions and sample logs
+```
+
+Feel free to explore and extend the utilities for your own log formats.
