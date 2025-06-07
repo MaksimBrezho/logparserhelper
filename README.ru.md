@@ -1,16 +1,3 @@
-<p align="right"><a href="README.md">🇬🇧 English version</a></p>
-
-<p align="center">
-  <img src="icon/ALLtoCEF.png" alt="Log Parser Helper icon" width="200">
-</p>
-
-<h1 align="center">Log Parser Helper</h1>
-
-<p align="center">
-  <img alt="Python" src="https://img.shields.io/badge/python-3.11%2B-blue?logo=python">
-  <img alt="License" src="https://img.shields.io/badge/license-MIT-green">
-</p>
-
 Log Parser Helper — это набор утилит и графический интерфейс для экспериментов с логами. Он позволяет создавать регулярные выражения, подсвечивать логи и генерировать код для преобразования в формат CEF (Common Event Format).
 
 ## Возможности
